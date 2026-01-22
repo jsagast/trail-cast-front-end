@@ -14,7 +14,7 @@ const searchLocations = async (location) => {
 
 const getWeather = async (longitude, latitude) => {
     try {
-        const res = await fetch(`${BASE_URL}weather?lon=${longitude}&lat=${latitude}`)
+        const res = await fetch(`${BASE_URL}place/weather?lon=${longitude}&lat=${latitude}`)
         const data = await res.json();
         console.log(res)
         console.log(data)

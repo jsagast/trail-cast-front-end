@@ -26,7 +26,7 @@ const LocationSearch = (props) => {
   const handleSelectLocation = (location) => {
     setSearchTerm(location.name);
     setSearchResults([]);
-    props.getWeather(location)
+    props.getWeather(location);
   };
 
   return (
