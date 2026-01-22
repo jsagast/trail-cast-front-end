@@ -7,10 +7,10 @@ import Landing from './components/Landing/Landing.jsx';
 import SignUpForm from './components/SignUpForm/SignUpForm.jsx';
 import SignInForm from './components/SignInForm/SignInForm.jsx';
 import Profile from './components/Profile/Profile.jsx';
-import * as forecastService from './services/forecastService';
 
 const App = () => {
   const { user } = useContext(UserContext);
+
 
 
   return (
