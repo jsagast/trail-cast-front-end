@@ -2,7 +2,7 @@
 
 ## About
 
-This repo is a React JWT Auth template meant to be paired with a back-end app utilizing JWT tokens.
+Barebones functionality for weather app
 
 ## Getting started
 
