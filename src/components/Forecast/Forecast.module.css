@@ -1,0 +1,63 @@
+.table {
+  /* controls */
+  --left-col-w: 180px;  /* <-- change left column width here */
+  --day-col-w: 240px;   /* <-- change day column width here */
+
+  --header-h: 64px;     /* header row height */
+  --cell-h: 190px;      /* each location row height */
+
+  display: grid;
+  border: 1px solid #ddd;
+  overflow-x: auto;
+  overflow-y: hidden;
+  box-sizing: border-box;
+
+  /* important for horizontal scrolling grids */
+  min-width: max-content;
+}
+
+.corner {
+  /* fill the grid cell */
+  height: 100%;
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-weight: 800;
+  padding: 0.75rem;
+  text-align: center;
+
+  background: #f2f2f2;
+  border-right: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  box-sizing: border-box;
+
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 3; /* above headers */
+}
+
+.dayHeader {
+  height: 100%;
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-weight: 800;
+  padding: 0.75rem;
+  text-align: center;
+
+  background: #f2f2f2;
+  border-bottom: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  box-sizing: border-box;
+
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}

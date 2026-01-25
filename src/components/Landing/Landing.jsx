@@ -8,9 +8,9 @@ const Landing = () => {
   const [weatherData, setWeatherData] = useState({});
 
   const getWeather = async (location) => {
-    const { name, longitude, latitude } = location
+    let { name, longitude, latitude } = location
     const weatherData = await forecastService.getWeather(longitude, latitude)
-    setWeatherData({name: name, weather: weatherData})
+    setWeatherData({name: name.replace(', United States of America', ''), forecast: weatherData})
   }
 
   return (
