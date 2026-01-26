@@ -1,4 +1,3 @@
-// src/hooks/useWeatherList.js
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as forecastService from '../services/forecastService.js';
 

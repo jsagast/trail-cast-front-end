@@ -1,4 +1,3 @@
-// src/components/CreateList/CreateList.jsx
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -21,7 +20,6 @@ const CreateList = ({ mode }) => {
 
   const initialLocation = state?.initialLocation;
 
-  // Local list-in-progress (CreateList owns this)
   const { locations, setLocations, addLocation } = useWeatherList({
     initialLocation,
     limit: 20,
@@ -56,11 +54,10 @@ const CreateList = ({ mode }) => {
           const locDoc = entry.location; // populated Location doc
           if (!locDoc) continue;
 
-          // eslint-disable-next-line no-await-in-loop
           const forecast = await forecastService.getWeather(locDoc.longitude, locDoc.latitude);
 
           built.push({
-            _id: locDoc._id, // IMPORTANT: we keep DB id for reorder/remove/save
+            _id: locDoc._id,
             name: locDoc.name,
             lon: locDoc.longitude,
             lat: locDoc.latitude,
@@ -109,7 +106,6 @@ const CreateList = ({ mode }) => {
         for (const loc of locations) {
           if (loc?.lon == null || loc?.lat == null) continue;
 
-          // eslint-disable-next-line no-await-in-loop
           await listService.addLocationToList(created._id, {
             name: loc.name,
             longitude: loc.lon,
@@ -133,11 +129,9 @@ const CreateList = ({ mode }) => {
       });
 
       // 2) ensure every UI location exists in this list
-      //    (and ensure we have _id for reorder/remove)
       for (const loc of locations) {
         if (loc?._id) continue;
 
-        // eslint-disable-next-line no-await-in-loop
         const updatedList = await listService.addLocationToList(listId, {
           name: loc.name,
           longitude: loc.lon,
@@ -152,14 +146,12 @@ const CreateList = ({ mode }) => {
         });
 
         if (match?.location?._id) {
-          // attach id directly (ok — object is from state array)
-          // eslint-disable-next-line no-param-reassign
+          // attach id directly
           loc._id = match.location._id;
         }
       }
 
       // 3) remove any locations that are no longer in UI
-      //    (fetch server list to compare, safest)
       const serverNow = await listService.getList(listId);
       const serverIds = (serverNow.locations || [])
         .map((e) => e.location?._id)
@@ -173,7 +165,6 @@ const CreateList = ({ mode }) => {
 
       for (const id of serverIds) {
         if (!uiIds.includes(id)) {
-          // eslint-disable-next-line no-await-in-loop
           await listService.removeLocationFromList(listId, id);
         }
       }
@@ -229,9 +220,18 @@ const CreateList = ({ mode }) => {
         </button>
       </div>
 
-      <Forecast locations={locations} setLocations={setLocations} reorderable={true} limit={20} />
+      <Forecast
+        locations={locations}
+        setLocations={setLocations}
+        reorderable={true}
+        limit={20}
+        showListDropdown={false}
+      />
 
-      <LocationSearch getWeather={addLocation} autoLoad={false} />
+      <LocationSearch
+        getWeather={addLocation}
+        autoLoad={false}
+      />
     </main>
   );
 };

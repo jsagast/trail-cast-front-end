@@ -1,4 +1,3 @@
-// src/components/LocationSearch/LocationSearch.jsx
 import { useState, useEffect, useRef } from 'react';
 import * as forecastService from '../../services/forecastService.js';
 import styles from './LocationSearch.module.css';

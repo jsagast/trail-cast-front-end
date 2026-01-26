@@ -1,8 +1,8 @@
 // src/components/Forecast/Forecast.jsx
-import { useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import styles from './Forecast.module.css';
 import ForecastLocationRow from '../ForecastLocationRow/ForecastLocationRow.jsx';
-import * as listService from '../../services/listService.js';
+import { ListsContext } from '../../contexts/ListsContext.jsx';
 
 const dateKeyFromStartTime = (startTime) => startTime?.slice(0, 10);
 
@@ -36,31 +36,14 @@ const Forecast = ({
   setLocations: setControlledLocations,
 
   reorderable = false,
+
+  showListDropdown = true,
 }) => {
+  const { lists, listsLoading, listsError } = useContext(ListsContext)
+
   const [internalLocations, setInternalLocations] = useState([]);
   const locations = controlledLocations ?? internalLocations;
   const setLocations = setControlledLocations ?? setInternalLocations;
-
-  // ✅ Fetch lists once (so each row can show them)
-  const [lists, setLists] = useState([]);
-
-  useEffect(() => {
-    let alive = true;
-
-    (async () => {
-      try {
-        const data = await listService.getMyLists();
-        if (alive) setLists(Array.isArray(data) ? data : []);
-      } catch {
-        // If user is logged out / 401, just show no lists.
-        if (alive) setLists([]);
-      }
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (!weatherData?.name) return;
@@ -69,9 +52,7 @@ const Forecast = ({
       const withoutThis = prev.filter((l) => l.name !== weatherData.name);
 
       if (mode === 'newestTop' && initialTopName && weatherData.source === 'init') {
-        if (weatherData.name === initialTopName) {
-          return [weatherData, ...withoutThis].slice(0, limit);
-        }
+        if (weatherData.name === initialTopName) return [weatherData, ...withoutThis].slice(0, limit);
         if (withoutThis[0]?.name === initialTopName) {
           return [withoutThis[0], weatherData, ...withoutThis.slice(1)].slice(0, limit);
         }
@@ -79,9 +60,7 @@ const Forecast = ({
 
       if (mode === 'pinFirst' && withoutThis.length) {
         const pinned = withoutThis[0];
-        if (weatherData.name === pinned.name) {
-          return [weatherData, ...withoutThis.slice(1)].slice(0, limit);
-        }
+        if (weatherData.name === pinned.name) return [weatherData, ...withoutThis.slice(1)].slice(0, limit);
         return [pinned, weatherData, ...withoutThis.slice(1)].slice(0, limit);
       }
 
@@ -131,12 +110,15 @@ const Forecast = ({
             key={loc.name}
             weatherData={loc}
             dayColumns={dayColumns}
-            lists={lists} // ✅ pass lists down
             reorder={
               reorderable
                 ? { enabled: true, index: idx, total: locations.length, onMove: moveLocation, onRemove: removeLocation }
                 : null
             }
+            showListDropdown={showListDropdown}
+            lists={lists}
+            listsLoading={listsLoading}
+            listsError={listsError}
           />
         ))}
       </div>

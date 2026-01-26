@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import styles from './ForecastLocationRow.module.css';
 import * as listService from '../../services/listService.js';
 
@@ -14,34 +14,60 @@ const variantIndexFromKey = (key, mod = 3) => {
   return hash % mod;
 };
 
-const ForecastLocationRow = ({ weatherData, dayColumns, reorder, lists = [] }) => {
+const STAR_VARIANTS = [
+  styles.starsA,
+  styles.starsB,
+  styles.starsC,
+  styles.starsD,
+  styles.starsE,
+  styles.starsF,
+];
+
+const DEFAULT_LABEL = 'Add to list?';
+
+const ForecastLocationRow = ({
+  weatherData,
+  dayColumns,
+  reorder,
+  showListDropdown = true,
+  lists = [],
+  listsLoading = false,
+  listsError = '',
+}) => {
   const navigate = useNavigate();
 
   // dropdown state
   const [listChoice, setListChoice] = useState('');
-  const [selectLabel, setSelectLabel] = useState('Add to list?');
+  const [selectLabel, setSelectLabel] = useState(DEFAULT_LABEL);
   const [savingToList, setSavingToList] = useState(false);
 
-  // Build lookup: dateKey -> { day, night }
-  const byDate = {};
-  for (const p of weatherData.forecast || []) {
-    const dk = dateKeyFromStartTime(p.startTime);
-    if (!dk) continue;
-    if (!byDate[dk]) byDate[dk] = { day: null, night: null };
-    if (p.isDaytime) byDate[dk].day = p;
-    else byDate[dk].night = p;
-  }
+  const byDate = useMemo(() => {
+    const map = {};
+    for (const p of weatherData.forecast || []) {
+      const dk = dateKeyFromStartTime(p.startTime);
+      if (!dk) continue;
+      if (!map[dk]) map[dk] = { day: null, night: null };
+      if (p.isDaytime) map[dk].day = p;
+      else map[dk].night = p;
+    }
+    return map;
+  }, [weatherData.forecast]);
+
+  const resetLabelIfNeeded = () => {
+    if (selectLabel !== DEFAULT_LABEL) setSelectLabel(DEFAULT_LABEL);
+  };
 
   const handleListChange = async (e) => {
     const value = e.target.value;
-    setListChoice('');
+    setListChoice(''); // keep it on the placeholder
 
     if (value === 'new') {
       navigate('/lists/new', { state: { initialLocation: weatherData } });
       return;
     }
 
-    // add to an existing list
+    if (!value) return;
+
     try {
       setSavingToList(true);
 
@@ -57,43 +83,21 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder, lists = [] }) =
 
       setSelectLabel(`Added to ${listName} ✓`);
     } catch (err) {
-      // 409 from backend → already in list
-      setSelectLabel(err.message || 'Could not add');
+      setSelectLabel(err?.message || 'Could not add');
     } finally {
       setSavingToList(false);
     }
   };
 
-  const handleSelectOpen = () => {
-    // only reset if we’re currently showing a success message
-    if (selectLabel !== 'Add to list?') setSelectLabel('Add to list?');
-  };
-
   const renderHalf = (period, isNight) => {
     if (!period) return <div className={`${styles.half} ${styles.empty}`}>—</div>;
 
-    let nightStarsClass = '';
-    if (isNight) {
-      const variants = [
-        styles.starsA,
-        styles.starsB,
-        styles.starsC,
-        styles.starsD,
-        styles.starsE,
-        styles.starsF,
-      ];
-      const idx = variantIndexFromKey(period.startTime, variants.length);
-      nightStarsClass = variants[idx];
-    }
+    const nightStarsClass = isNight
+      ? STAR_VARIANTS[variantIndexFromKey(period.startTime, STAR_VARIANTS.length)]
+      : '';
 
     return (
-      <div
-        className={[
-          styles.half,
-          isNight ? styles.night : styles.day,
-          isNight ? nightStarsClass : '',
-        ].join(' ')}
-      >
+      <div className={[styles.half, isNight ? styles.night : styles.day, nightStarsClass].join(' ')}>
         <img src={period.icon} alt={period.shortForecast} className={styles.icon} />
         <div className={styles.condition}>{period.shortForecast}</div>
         <div className={styles.temp}>
@@ -131,6 +135,7 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder, lists = [] }) =
             >
               ↑
             </button>
+
             <button
               type="button"
               onClick={(e) => {
@@ -143,6 +148,7 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder, lists = [] }) =
             >
               ↓
             </button>
+
             <button
               type="button"
               onClick={(e) => {
@@ -157,28 +163,37 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder, lists = [] }) =
           </div>
         )}
 
-        <select
-          id="listId"
-          name="listId"
-          value={listChoice}
-          onChange={handleListChange}
-          onMouseDown={handleSelectOpen}
-          onFocus={handleSelectOpen}
-          disabled={savingToList}
-        >
-          
-          <option value="" disabled>
-            {savingToList ? 'Adding…' : selectLabel}
-          </option>
-
-          {lists.map((list) => (
-            <option key={list._id} value={list._id}>
-              {list.name}
+        {showListDropdown && (
+          <select
+            id="listId"
+            name="listId"
+            value={listChoice}
+            onChange={handleListChange}
+            onPointerDown={resetLabelIfNeeded}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') resetLabelIfNeeded();
+            }}
+            disabled={savingToList || listsLoading || !!listsError}
+          >
+            <option value="" disabled>
+              {savingToList
+                ? 'Adding…'
+                : listsLoading
+                ? 'Loading lists…'
+                : listsError
+                ? 'Lists unavailable'
+                : selectLabel}
             </option>
-          ))}
 
-          <option value="new">+ new list</option>
-        </select>
+            {lists.map((list) => (
+              <option key={list._id} value={list._id}>
+                {list.name}
+              </option>
+            ))}
+
+            <option value="new">+ New list…</option>
+          </select>
+        )}
       </div>
 
       {dayColumns.map(({ dateKey }) => {

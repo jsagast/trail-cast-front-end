@@ -1,4 +1,3 @@
-// src/components/ShowList/ShowList.jsx
 import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import Forecast from '../Forecast/Forecast.jsx';
@@ -22,7 +21,7 @@ const ShowList = () => {
       return;
     }
 
-    // If we navigated from CreateList and passed data, render immediately.
+    // If navigated from CreateList and passed data, render immediately.
     if (state?.list && state?.locations?.length) {
       setLoading(false);
       return;
@@ -42,7 +41,6 @@ const ShowList = () => {
           const locDoc = entry.location; // populated Location doc
           if (!locDoc) continue;
 
-          // eslint-disable-next-line no-await-in-loop
           const forecast = await forecastService.getWeather(locDoc.longitude, locDoc.latitude);
 
           built.push({
@@ -71,12 +69,12 @@ const ShowList = () => {
       <h2>{list?.name ?? 'List'}</h2>
       {list?.description ? <p>{list.description}</p> : null}
 
-      <Forecast
-        locations={locations}
-        // no setLocations needed unless you want edits on this page
-        reorderable={false}
-        limit={20}
-      />
+    <Forecast
+      locations={locations}
+      reorderable={false}
+      limit={20}
+      showListDropdown={false}
+    />
     </main>
   );
 };
