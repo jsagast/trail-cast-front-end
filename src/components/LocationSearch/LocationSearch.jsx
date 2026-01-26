@@ -1,3 +1,4 @@
+// src/components/LocationSearch/LocationSearch.jsx
 import { useState, useEffect, useRef } from 'react';
 import * as forecastService from '../../services/forecastService.js';
 import styles from './LocationSearch.module.css';
@@ -48,7 +49,7 @@ const pickRandomUnique = (arr, n) => {
   return picked;
 };
 
-const LocationSearch = ({ getWeather }) => {
+const LocationSearch = ({ getWeather, autoLoad = true }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
 
@@ -72,20 +73,20 @@ const LocationSearch = ({ getWeather }) => {
       if (!place) return;
 
       // place must have latitude/longitude for your getWeather
-      getWeatherRef.current(place);
+      await getWeatherRef.current(place, 'init');
     } catch (err) {
       console.error('Failed to load city forecast:', cityString, err);
     }
   };
 
   useEffect(() => {
-    if (didInitRef.current) return; // prevents StrictMode double-run + any re-runs
+    if (!autoLoad) return;
+    if (didInitRef.current) return;
     didInitRef.current = true;
 
     const loadRandomCities = async (count) => {
       const randomCities = pickRandomUnique(cities, count);
       for (const city of randomCities) {
-        // sequential so you don’t hammer your API
         // eslint-disable-next-line no-await-in-loop
         await loadCityForecast(city);
       }
@@ -98,12 +99,15 @@ const LocationSearch = ({ getWeather }) => {
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        // 1) user location
-        getWeatherRef.current({
-          name: "Your Location",
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
+        // 1) user location — await so it happens first
+        await getWeatherRef.current(
+          {
+            name: 'Your Location',
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          },
+          'init'
+        );
 
         // 2) four random cities
         await loadRandomCities(4);
@@ -113,7 +117,7 @@ const LocationSearch = ({ getWeather }) => {
         await loadRandomCities(5);
       }
     );
-  }, []);
+  }, [autoLoad]);
 
   const handleInputChange = async (event) => {
     const query = event.target.value;
@@ -124,19 +128,25 @@ const LocationSearch = ({ getWeather }) => {
       return;
     }
 
-    const searchData = await forecastService.searchLocations(query);
-
-    if (query === event.target.value) {
-      setSearchResults(searchData?.places || []);
+    try {
+      const searchData = await forecastService.searchLocations(query);
+      // ignore stale responses while user types
+      if (query === event.target.value) {
+        setSearchResults(searchData?.places || []);
+      }
+    } catch (err) {
+      console.error('Location search failed:', err);
+      setSearchResults([]);
     }
   };
 
   const handleSelectLocation = (location) => {
     setSearchTerm('');
     setSearchResults([]);
-    getWeatherRef.current(location);
+    getWeatherRef.current(location, 'user');
   };
 
+  // placeholder animation
   useEffect(() => {
     const interval = setInterval(() => {
       setFade(false);
@@ -155,6 +165,7 @@ const LocationSearch = ({ getWeather }) => {
         <label htmlFor="search" className={styles.searchLabel}>
           Search Location:
         </label>
+
         <input
           id="search"
           type="text"

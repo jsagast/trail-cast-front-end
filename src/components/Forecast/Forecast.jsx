@@ -1,17 +1,16 @@
+// src/components/Forecast/Forecast.jsx
 import { useEffect, useMemo, useState } from 'react';
 import styles from './Forecast.module.css';
 import ForecastLocationRow from '../ForecastLocationRow/ForecastLocationRow.jsx';
 
-const dateKeyFromStartTime = (startTime) => startTime?.slice(0, 10); // "YYYY-MM-DD"
+const dateKeyFromStartTime = (startTime) => startTime?.slice(0, 10);
 
 const weekdayLabel = (dateKey) => {
-  // Use midday to avoid timezone edge weirdness
   const d = new Date(`${dateKey}T12:00:00`);
   return d.toLocaleDateString(undefined, { weekday: 'short' });
 };
 
 const buildDayColumns = (forecast) => {
-  // returns [{ dateKey, label }]
   const order = [];
   const seen = new Set();
 
@@ -22,22 +21,67 @@ const buildDayColumns = (forecast) => {
     order.push(dk);
   }
 
-  // keep same number of “days” you expect (ex: 7)
-  const days = order.slice(0, 7);
-  return days.map((dk) => ({ dateKey: dk, label: weekdayLabel(dk) }));
+  return order.slice(0, 7).map((dk) => ({ dateKey: dk, label: weekdayLabel(dk) }));
 };
 
-const Forecast = ({ weatherData }) => {
-  const [locations, setLocations] = useState([]);
+const Forecast = ({
+  weatherData,
+  mode = 'newestTop',
+  limit = 5,
+  initialTopName = null,
+
+  // controlled mode (CreateList)
+  locations: controlledLocations,
+  setLocations: setControlledLocations,
+
+  // NEW
+  reorderable = false,
+}) => {
+  const [internalLocations, setInternalLocations] = useState([]);
+  const locations = controlledLocations ?? internalLocations;
+  const setLocations = setControlledLocations ?? setInternalLocations;
 
   useEffect(() => {
     if (!weatherData?.name) return;
 
     setLocations((prev) => {
       const withoutThis = prev.filter((l) => l.name !== weatherData.name);
-      return [...withoutThis, weatherData];
+
+      if (mode === 'newestTop' && initialTopName && weatherData.source === 'init') {
+        if (weatherData.name === initialTopName) {
+          return [weatherData, ...withoutThis].slice(0, limit);
+        }
+        if (withoutThis[0]?.name === initialTopName) {
+          return [withoutThis[0], weatherData, ...withoutThis.slice(1)].slice(0, limit);
+        }
+      }
+
+      if (mode === 'pinFirst' && withoutThis.length) {
+        const pinned = withoutThis[0];
+        if (weatherData.name === pinned.name) {
+          return [weatherData, ...withoutThis.slice(1)].slice(0, limit);
+        }
+        return [pinned, weatherData, ...withoutThis.slice(1)].slice(0, limit);
+      }
+
+      return [weatherData, ...withoutThis].slice(0, limit);
     });
-  }, [weatherData]);
+  }, [weatherData, mode, limit, initialTopName, setLocations]);
+
+  // reorder helpers (only used when reorderable = true)
+  const moveLocation = (fromIdx, toIdx) => {
+    setLocations((prev) => {
+      if (toIdx < 0 || toIdx >= prev.length) return prev;
+      const copy = [...prev];
+      const [moved] = copy.splice(fromIdx, 1);
+      copy.splice(toIdx, 0, moved);
+      return copy;
+    });
+  };
+
+  const removeLocation = (idx) => {
+    setLocations((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   const dayColumns = useMemo(() => {
     if (!locations.length) return [];
@@ -46,12 +90,10 @@ const Forecast = ({ weatherData }) => {
 
   if (!locations.length || !dayColumns.length) return <main>Forecast Loading</main>;
 
-  // 1 label col + N day cols
   const gridStyle = {
     gridTemplateColumns: `var(--left-col-w) repeat(${dayColumns.length}, var(--day-col-w))`,
     gridTemplateRows: `var(--header-h) repeat(${locations.length}, var(--cell-h))`,
   };
-
 
   return (
     <main>
@@ -64,8 +106,17 @@ const Forecast = ({ weatherData }) => {
           </div>
         ))}
 
-        {locations.map((loc) => (
-          <ForecastLocationRow key={loc.name} weatherData={loc} dayColumns={dayColumns} />
+        {locations.map((loc, idx) => (
+          <ForecastLocationRow
+            key={loc.name}
+            weatherData={loc}
+            dayColumns={dayColumns}
+            reorder={
+              reorderable
+                ? { enabled: true, index: idx, total: locations.length, onMove: moveLocation, onRemove: removeLocation }
+                : null
+            }
+          />
         ))}
       </div>
     </main>
@@ -73,3 +124,4 @@ const Forecast = ({ weatherData }) => {
 };
 
 export default Forecast;
+

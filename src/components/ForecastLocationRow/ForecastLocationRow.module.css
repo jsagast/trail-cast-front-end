@@ -3,8 +3,11 @@
   width: 100%;
 
   display: flex;
+  flex-direction: column;   /* <- stack */
   align-items: center;
   justify-content: center;
+
+  gap: 0.4rem;              /* <- spacing between controls */
 
   font-weight: 800;
   padding: 0.75rem;
@@ -18,6 +21,25 @@
   position: sticky;
   left: 0;
   z-index: 1;
+}
+
+.reorderControls {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.reorderControls button {
+  font-weight: 800;
+  padding: 0.25rem 0.45rem;
+  border: 1px solid #ccc;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.reorderControls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .cell {
@@ -38,6 +60,8 @@
 }
 
 .half {
+  position: relative;
+  overflow: hidden;
   height: 100%;
   min-width: 0; /* prevents text overflow from breaking layout */
 
@@ -52,15 +76,165 @@
 }
 
 .half + .half {
-  border-left: 1px solid #ddd;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .day {
-  background: linear-gradient(#ffffff, #f7fbff);
+  position: relative;
+  overflow: hidden;
+
+  background: linear-gradient(180deg, #f6fbff 0%, #ffffff 55%, #f2f7ff 100%);
+  color: #0b1220;
+}
+
+.day::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  /* soft sun glow in top-right + faint sky haze */
+  background:
+    radial-gradient(circle at 82% 18%, rgba(255, 214, 102, 0.55) 0 34px, transparent 58px),
+    radial-gradient(circle at 18% 22%, rgba(120, 200, 255, 0.18) 0 80px, transparent 160px),
+    linear-gradient(180deg, rgba(255,255,255,0.0), rgba(255,255,255,0.35));
+
+  opacity: 0.9;
 }
 
 .night {
-  background: linear-gradient(#eef2ff, #e0e7ff);
+  background: linear-gradient(180deg, #0b1220 0%, #101b33 55%, #14264a 100%);
+  color: #eaf2ff;
+  position: relative;
+  overflow: hidden;
+}
+
+/* star layer base */
+.night::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+
+  width: 100%;
+  height: 25%;
+  pointer-events: none;
+
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0));
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0));
+
+  opacity: 1;
+
+  animation: twinkle 3.8s ease-in-out infinite;
+  will-change: opacity, filter;
+}
+
+.day > *,
+.night > * {
+  position: relative;
+  z-index: 1;
+}
+
+.starsA::before {
+  background:
+    radial-gradient(circle at 8%  18%, rgba(255,255,255,0.90) 0 0.42px, transparent 1.35px),
+    radial-gradient(circle at 18% 72%, rgba(255,255,255,0.70) 0 0.38px, transparent 1.35px),
+    radial-gradient(circle at 30% 42%, rgba(255,255,255,0.82) 0 0.42px, transparent 1.35px),
+    radial-gradient(circle at 44% 88%, rgba(255,255,255,0.62) 0 0.36px, transparent 1.35px),
+    radial-gradient(circle at 58% 22%, rgba(255,255,255,0.86) 0 0.42px, transparent 1.35px),
+    radial-gradient(circle at 74% 60%, rgba(255,255,255,0.66) 0 0.36px, transparent 1.35px),
+    radial-gradient(circle at 90% 34%, rgba(255,255,255,0.84) 0 0.42px, transparent 1.35px),
+    radial-gradient(circle at 96% 84%, rgba(255,255,255,0.58) 0 0.34px, transparent 1.35px);
+}
+
+.starsB::before {
+  background:
+    radial-gradient(circle at 6%  64%, rgba(255,255,255,0.76) 0 0.40px, transparent 1.35px),
+    radial-gradient(circle at 14% 22%, rgba(255,255,255,0.92) 0 0.44px, transparent 1.35px),
+    radial-gradient(circle at 26% 90%, rgba(255,255,255,0.60) 0 0.34px, transparent 1.35px),
+    radial-gradient(circle at 40% 36%, rgba(255,255,255,0.84) 0 0.42px, transparent 1.35px),
+    radial-gradient(circle at 55% 76%, rgba(255,255,255,0.66) 0 0.36px, transparent 1.35px),
+    radial-gradient(circle at 68% 18%, rgba(255,255,255,0.90) 0 0.44px, transparent 1.35px),
+    radial-gradient(circle at 82% 52%, rgba(255,255,255,0.72) 0 0.40px, transparent 1.35px),
+    radial-gradient(circle at 94% 86%, rgba(255,255,255,0.58) 0 0.34px, transparent 1.35px);
+}
+
+.starsC::before {
+  background:
+    radial-gradient(circle at 10% 38%, rgba(255,255,255,0.86) 0 0.42px, transparent 1.35px),
+    radial-gradient(circle at 22% 14%, rgba(255,255,255,0.92) 0 0.44px, transparent 1.35px),
+    radial-gradient(circle at 34% 70%, rgba(255,255,255,0.68) 0 0.36px, transparent 1.35px),
+    radial-gradient(circle at 46% 92%, rgba(255,255,255,0.58) 0 0.34px, transparent 1.35px),
+    radial-gradient(circle at 60% 44%, rgba(255,255,255,0.80) 0 0.42px, transparent 1.35px),
+    radial-gradient(circle at 72% 10%, rgba(255,255,255,0.94) 0 0.44px, transparent 1.35px),
+    radial-gradient(circle at 84% 78%, rgba(255,255,255,0.64) 0 0.36px, transparent 1.35px),
+    radial-gradient(circle at 96% 26%, rgba(255,255,255,0.88) 0 0.42px, transparent 1.35px);
+}
+
+.starsD::before {
+  background:
+    radial-gradient(circle at 5%  20%, rgba(255,255,255,0.92) 0 0.44px, transparent 1.35px),
+    radial-gradient(circle at 16% 86%, rgba(255,255,255,0.60) 0 0.34px, transparent 1.35px),
+    radial-gradient(circle at 28% 56%, rgba(255,255,255,0.74) 0 0.40px, transparent 1.35px),
+    radial-gradient(circle at 42% 12%, rgba(255,255,255,0.94) 0 0.44px, transparent 1.35px),
+    radial-gradient(circle at 54% 74%, rgba(255,255,255,0.66) 0 0.36px, transparent 1.35px),
+    radial-gradient(circle at 70% 34%, rgba(255,255,255,0.82) 0 0.42px, transparent 1.35px),
+    radial-gradient(circle at 86% 92%, rgba(255,255,255,0.56) 0 0.34px, transparent 1.35px),
+    radial-gradient(circle at 96% 48%, rgba(255,255,255,0.78) 0 0.40px, transparent 1.35px);
+}
+
+.starsE::before {
+  background:
+    radial-gradient(circle at 12% 92%, rgba(255,255,255,0.58) 0 0.34px, transparent 1.35px),
+    radial-gradient(circle at 20% 46%, rgba(255,255,255,0.80) 0 0.42px, transparent 1.35px),
+    radial-gradient(circle at 32% 18%, rgba(255,255,255,0.92) 0 0.44px, transparent 1.35px),
+    radial-gradient(circle at 48% 64%, rgba(255,255,255,0.70) 0 0.38px, transparent 1.35px),
+    radial-gradient(circle at 62% 86%, rgba(255,255,255,0.60) 0 0.34px, transparent 1.35px),
+    radial-gradient(circle at 74% 28%, rgba(255,255,255,0.88) 0 0.42px, transparent 1.35px),
+    radial-gradient(circle at 88% 54%, rgba(255,255,255,0.74) 0 0.40px, transparent 1.35px),
+    radial-gradient(circle at 96% 12%, rgba(255,255,255,0.94) 0 0.44px, transparent 1.35px);
+}
+
+.starsF::before {
+  background:
+    radial-gradient(circle at 8%  48%, rgba(255,255,255,0.78) 0 0.40px, transparent 1.35px),
+    radial-gradient(circle at 18% 10%, rgba(255,255,255,0.94) 0 0.44px, transparent 1.35px),
+    radial-gradient(circle at 30% 84%, rgba(255,255,255,0.60) 0 0.34px, transparent 1.35px),
+    radial-gradient(circle at 46% 28%, rgba(255,255,255,0.86) 0 0.42px, transparent 1.35px),
+    radial-gradient(circle at 58% 92%, rgba(255,255,255,0.58) 0 0.34px, transparent 1.35px),
+    radial-gradient(circle at 72% 50%, rgba(255,255,255,0.76) 0 0.40px, transparent 1.35px),
+    radial-gradient(circle at 86% 16%, rgba(255,255,255,0.92) 0 0.44px, transparent 1.35px),
+    radial-gradient(circle at 98% 76%, rgba(255,255,255,0.62) 0 0.36px, transparent 1.35px);
+}
+
+.starsA::before { animation-duration: 3.6s; animation-delay: -0.4s; }
+.starsB::before { animation-duration: 4.2s; animation-delay: -1.1s; }
+.starsC::before { animation-duration: 3.9s; animation-delay: -2.0s; }
+.starsD::before { animation-duration: 4.6s; animation-delay: -0.8s; }
+.starsE::before { animation-duration: 3.4s; animation-delay: -1.6s; }
+.starsF::before { animation-duration: 4.0s; animation-delay: -2.6s; }
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.75; filter: brightness(1); }
+  50%      { opacity: 1;    filter: brightness(1.35); }
+}
+
+/* ensure inner text inherits the lighter night color */
+.night .condition,
+.night .temp,
+.night .meta,
+.night .halfTitle {
+  color: #eaf2ff;
+}
+
+/* slightly soften secondary text */
+.night .meta {
+  opacity: 0.92;
+}
+
+/* optional: make the emoji/icons feel less harsh on dark bg */
+.night .icon {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
 }
 
 .empty {
@@ -97,4 +271,8 @@
   gap: 0.6rem;
   font-size: 0.85rem;
   opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .night::before { animation: none; }
 }
