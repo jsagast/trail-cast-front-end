@@ -1,8 +1,8 @@
-const BASE_URL = `${import.meta.env.VITE_BACK_END_SERVER_URL}/locations/`;
+const BASE_PATH = '/locations';
 
 const createComment = async (locationId, commentFormData) => {
   try {
-    const res = await fetch(`${BASE_URL}/${locationId}/comments`, {
+    const res = await fetch(`${BASE_PATH}/${locationId}/comments`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -18,7 +18,7 @@ const createComment = async (locationId, commentFormData) => {
 
 const updateComment = async (locationId, commentId, commentFormData)=> {
   try {
-    const res = await fetch(`${BASE_URL}/${locationId}/comments/${commentId}`, {
+    const res = await fetch(`${BASE_PATH}/${locationId}/comments/${commentId}`, {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -34,7 +34,7 @@ const updateComment = async (locationId, commentId, commentFormData)=> {
 
 const deleteComment = async (locationId, commentId) => {
   try {
-    const res = await fetch(`${BASE_URL}/${locationId}/comments/${commentId}`, {
+    const res = await fetch(`${BASE_PATH}/${locationId}/comments/${commentId}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -46,8 +46,8 @@ const deleteComment = async (locationId, commentId) => {
   }
 };
 
-export {
-    createComment,
-    updateComment,
-    deleteComment,
-}
+export default {
+  createComment,
+  updateComment,
+  deleteComment,
+};

@@ -5,7 +5,7 @@ import { ListsContext } from '../../contexts/ListsContext.jsx';
 import styles from './Profile.module.css';
 
 const Profile = () => {
-  const { lists, loading, error, deleteList } = useContext(ListsContext);
+  const { lists, listsLoading, listsError, deleteList } = useContext(ListsContext);
   const [actionError, setActionError] = useState('');
 
   const handleDelete = async (list) => {
@@ -20,8 +20,8 @@ const Profile = () => {
     }
   };
 
-  if (loading) return <main className={styles.container}>Loading…</main>;
-  if (error) return <main className={styles.container}>{error}</main>;
+  if (listsLoading) return <main className={styles.container}>Loading…</main>;
+  if (listsError) return <main className={styles.container}>{listsError}</main>;
 
   return (
     <main className={styles.container}>

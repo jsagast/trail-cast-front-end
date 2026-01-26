@@ -1,53 +1,29 @@
-const BASE_URL = `${import.meta.env.VITE_BACK_END_SERVER_URL}/locations/`;
+import { request } from './apiClient.js';
 
-const createActivity = async (locationId, commentFormData) => {
-  try {
-    const res = await fetch(`${BASE_URL}/${locationId}/logs`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(commentFormData),
-    });
-    return res.json();
-  } catch (error) {
-    console.log(error);
-  }
+const BASE_PATH = '/locations';
+
+export const createActivity = async (locationId, logFormData) => {
+  return await request(`${BASE_PATH}/${locationId}/logs`, {
+    method: 'POST',
+    body: logFormData,
+  });
 };
 
-const updateActivity = async (locationId, logId, logFormData)=> {
-  try {
-    const res = await fetch(`${BASE_URL}/${locationId}/comments/${logId}`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(logFormData),
-    });
-    return res.json();
-  } catch (error) {
-    console.log(error);
-  }
+export const updateActivity = async (locationId, logId, logFormData) => {
+  return await request(`${BASE_PATH}/${locationId}/logs/${logId}`, {
+    method: 'PUT',
+    body: logFormData,
+  });
 };
 
-const deleteActivity = async (locationId, logId) => {
-  try {
-    const res = await fetch(`${BASE_URL}/${locationId}/comments/${logId}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-    });
-    return res.json();
-  } catch (error) {
-    console.log(error);
-  }
+export const deleteActivity = async (locationId, logId) => {
+  return await request(`${BASE_PATH}/${locationId}/logs/${logId}`, {
+    method: 'DELETE',
+  });
 };
 
-export {
-    createActivity,
-    updateActivity,
-    deleteActivity
-}
+export default {
+  createActivity,
+  updateActivity,
+  deleteActivity,
+};

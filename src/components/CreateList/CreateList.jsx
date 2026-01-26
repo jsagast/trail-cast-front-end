@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import Forecast from '../Forecast/Forecast.jsx';
@@ -8,6 +8,7 @@ import styles from './CreateList.module.css';
 import { useWeatherList } from '../../hooks/useWeatherList.js';
 import * as listService from '../../services/listService.js';
 import * as forecastService from '../../services/forecastService.js';
+import { ListsContext } from '../../contexts/ListsContext.jsx';
 
 const EPS = 1e-6;
 const sameCoords = (aLon, aLat, bLon, bLat) =>
@@ -17,6 +18,8 @@ const CreateList = ({ mode }) => {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { listId } = useParams();
+
+  const { createList: createListCtx, updateList: updateListCtx } = useContext(ListsContext);
 
   const initialLocation = state?.initialLocation;
 
@@ -97,7 +100,7 @@ const CreateList = ({ mode }) => {
 
       // ---------- CREATE ----------
       if (mode === 'create') {
-        const created = await listService.createList({
+        const created = await createListCtx({
           name: form.name.trim(),
           description: form.description.trim(),
         });
@@ -123,7 +126,7 @@ const CreateList = ({ mode }) => {
 
       // ---------- EDIT ----------
       // 1) update metadata
-      await listService.updateList(listId, {
+      await updateListCtx(listId, {
         name: form.name.trim(),
         description: form.description.trim(),
       });

@@ -5,6 +5,17 @@ import * as listService from '../../services/listService.js';
 
 const dateKeyFromStartTime = (startTime) => startTime?.slice(0, 10);
 
+const locationKey = (loc) => {
+  if (!loc) return '';
+  if (loc._id) return String(loc._id);
+  if (loc.lon != null && loc.lat != null) {
+    const lo = Math.round(Number(loc.lon) * 10000) / 10000;
+    const la = Math.round(Number(loc.lat) * 10000) / 10000;
+    return `${lo}|${la}`;
+  }
+  return String(loc.name || '');
+};
+
 const variantIndexFromKey = (key, mod = 3) => {
   if (!key) return 0;
   let hash = 0;
@@ -200,7 +211,7 @@ const ForecastLocationRow = ({
         const pair = byDate[dateKey] || { day: null, night: null };
 
         return (
-          <div key={`${weatherData.name}-${dateKey}`} className={styles.cell}>
+          <div key={`${locationKey(weatherData)}-${dateKey}`} className={styles.cell}>
             <div className={styles.cellInner}>
               {renderHalf(pair.day, false)}
               {renderHalf(pair.night, true)}

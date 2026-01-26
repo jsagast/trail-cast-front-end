@@ -5,6 +5,12 @@ import * as listService from '../../services/listService.js';
 import * as forecastService from '../../services/forecastService.js';
 import styles from './ShowList.module.css';
 
+const coordKey = (lon, lat) => {
+  const lo = Math.round(Number(lon) * 10000) / 10000;
+  const la = Math.round(Number(lat) * 10000) / 10000;
+  return `${lo}|${la}`;
+};
+
 const ShowList = () => {
   const { listId } = useParams();
   const { state } = useLocation();
@@ -27,7 +33,6 @@ const ShowList = () => {
       return;
     }
 
-    // Otherwise fetch list + forecasts
     (async () => {
       try {
         setLoading(true);
@@ -36,25 +41,59 @@ const ShowList = () => {
         const fetched = await listService.getList(listId);
         setList(fetched);
 
-        const built = [];
-        for (const entry of fetched.locations || []) {
-          const locDoc = entry.location; // populated Location doc
-          if (!locDoc) continue;
+        // Collect populated Location docs in list order
+        const locDocs = (fetched.locations || [])
+          .map((entry) => entry.location)
+          .filter(Boolean);
 
-          const forecast = await forecastService.getWeather(locDoc.longitude, locDoc.latitude);
+        if (!locDocs.length) {
+          setLocations([]);
+          setError('This list has no locations yet.');
+          return;
+        }
+
+        // Batch weather fetch (fast + resilient)
+        const batchInput = locDocs.map((loc) => ({
+          name: loc.name,
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+        }));
+
+        const batch = await forecastService.getWeatherBatch(batchInput);
+        const results = batch?.results ?? batch ?? [];
+
+        const byKey = new Map(
+          results
+            .filter((r) => Array.isArray(r.forecast) && r.forecast.length)
+            .map((r) => [coordKey(r.lon ?? r.longitude, r.lat ?? r.latitude), r])
+        );
+
+        const built = [];
+        for (const loc of locDocs) {
+          const k = coordKey(loc.longitude, loc.latitude);
+          const r = byKey.get(k);
+
+          // Skip entries that failed to fetch forecast (keeps Forecast from getting stuck)
+          if (!r?.forecast?.length) continue;
 
           built.push({
-            name: locDoc.name,
-            lon: locDoc.longitude,
-            lat: locDoc.latitude,
-            forecast,
+            name: loc.name,
+            lon: loc.longitude,
+            lat: loc.latitude,
+            forecast: r.forecast,
             source: 'init',
           });
         }
 
+        if (!built.length) {
+          setLocations([]);
+          setError('Could not load forecasts for this list right now.');
+          return;
+        }
+
         setLocations(built);
       } catch (err) {
-        setError(err.message || 'Failed to load list.');
+        setError(err?.message || 'Failed to load list.');
       } finally {
         setLoading(false);
       }
@@ -69,12 +108,12 @@ const ShowList = () => {
       <h2>{list?.name ?? 'List'}</h2>
       {list?.description ? <p>{list.description}</p> : null}
 
-    <Forecast
-      locations={locations}
-      reorderable={false}
-      limit={20}
-      showListDropdown={false}
-    />
+      <Forecast
+        locations={locations}
+        reorderable={false}
+        limit={20}
+        showListDropdown={false}
+      />
     </main>
   );
 };

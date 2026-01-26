@@ -8,18 +8,14 @@ export function useWeather() {
   const getWeather = useCallback(async (location, source = 'user') => {
     const reqId = ++latestReqId.current;
 
-    const { name, longitude, latitude } = location;
-    const forecast = await forecastService.getWeather(longitude, latitude);
+    const next = await forecastService.getWeatherData(location);
 
     // ignore stale results finishing late
     if (reqId !== latestReqId.current) return;
 
     setWeatherData({
-      name: name?.replace?.(', United States of America', '') ?? name ?? 'Selected Location',
-      forecast,
+      ...next,
       source,
-      lon: longitude,
-      lat: latitude,
     });
   }, []);
 

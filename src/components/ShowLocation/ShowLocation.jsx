@@ -38,6 +38,7 @@ const ShowLocation = () => {
 
   return (
     <main className={styles.container}>
+      <h2>{name ?? 'Selected Location'}</h2>
       <Forecast
         weatherData={weatherData}
         mode="pinFirst"

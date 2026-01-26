@@ -1,58 +1,41 @@
-const BASE_URL = `${import.meta.env.VITE_BACK_END_SERVER_URL}/auth`;
+import { request } from './apiClient.js';
 
-const signUp = async (formData) => {
+const BASE_PATH = '/auth';
+
+const payloadFromToken = (token) => {
   try {
-    const res = await fetch(`${BASE_URL}/sign-up`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
-    });
-
-    const data = await res.json();
-
-    if (data.err) {
-      throw new Error(data.err);
-    }
-
-    if (data.token) {
-      localStorage.setItem('token', data.token);
-      return JSON.parse(atob(data.token.split('.')[1])).payload;
-    }
-
-    throw new Error('Invalid response from server');
-  } catch (err) {
-    console.log(err);
-    throw new Error(err);
+    return JSON.parse(atob(token.split('.')[1])).payload;
+  } catch {
+    return null;
   }
 };
 
-const signIn = async (formData) => {
-  try {
-    const res = await fetch(`${BASE_URL}/sign-in`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
-    });
+export const signUp = async (formData) => {
+  const data = await request(`${BASE_PATH}/sign-up`, {
+    method: 'POST',
+    body: formData,
+    withAuth: false,
+  });
 
-    const data = await res.json();
-
-    if (data.err) {
-      throw new Error(data.err);
-    }
-
-    if (data.token) {
-      localStorage.setItem('token', data.token);
-      return JSON.parse(atob(data.token.split('.')[1])).payload;
-    }
-
-    throw new Error('Invalid response from server');
-  } catch (err) {
-    console.log(err);
-    throw new Error(err);
-  }
+  if (!data?.token) throw new Error(data?.err || 'Invalid response from server');
+  localStorage.setItem('token', data.token);
+  const payload = payloadFromToken(data.token);
+  if (!payload) throw new Error('Invalid token');
+  return payload;
 };
 
-export {
-  signUp,
-  signIn,
+export const signIn = async (formData) => {
+  const data = await request(`${BASE_PATH}/sign-in`, {
+    method: 'POST',
+    body: formData,
+    withAuth: false,
+  });
+
+  if (!data?.token) throw new Error(data?.err || 'Invalid response from server');
+  localStorage.setItem('token', data.token);
+  const payload = payloadFromToken(data.token);
+  if (!payload) throw new Error('Invalid token');
+  return payload;
 };
+
+export default { signUp, signIn };

@@ -1,4 +1,3 @@
-// src/components/Forecast/Forecast.jsx
 import { useContext, useEffect, useMemo, useState } from 'react';
 import styles from './Forecast.module.css';
 import ForecastLocationRow from '../ForecastLocationRow/ForecastLocationRow.jsx';
@@ -25,6 +24,18 @@ const buildDayColumns = (forecast) => {
   return order.slice(0, 7).map((dk) => ({ dateKey: dk, label: weekdayLabel(dk) }));
 };
 
+// Stable identifier for a location. Names are not unique/stable.
+const locationKey = (loc) => {
+  if (!loc) return '';
+  if (loc._id) return String(loc._id);
+  if (loc.lon != null && loc.lat != null) {
+    const lo = Math.round(Number(loc.lon) * 10000) / 10000;
+    const la = Math.round(Number(loc.lat) * 10000) / 10000;
+    return `${lo}|${la}`;
+  }
+  return String(loc.name || '');
+};
+
 const Forecast = ({
   weatherData,
   mode = 'newestTop',
@@ -48,8 +59,10 @@ const Forecast = ({
   useEffect(() => {
     if (!weatherData?.name) return;
 
+    const incomingKey = locationKey(weatherData);
+
     setLocations((prev) => {
-      const withoutThis = prev.filter((l) => l.name !== weatherData.name);
+      const withoutThis = prev.filter((l) => locationKey(l) !== incomingKey);
 
       if (mode === 'newestTop' && initialTopName && weatherData.source === 'init') {
         if (weatherData.name === initialTopName) return [weatherData, ...withoutThis].slice(0, limit);
@@ -107,7 +120,7 @@ const Forecast = ({
 
         {locations.map((loc, idx) => (
           <ForecastLocationRow
-            key={loc.name}
+            key={locationKey(loc) || loc.name}
             weatherData={loc}
             dayColumns={dayColumns}
             reorder={
