@@ -1,3 +1,41 @@
-.container {
-    padding-top: 100px
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.newBtn {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.listItem {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.listLink {
+  display: block;
+  padding: 0.9rem 1rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.listTitle {
+  font-weight: 800;
+}
+
+.listDesc {
+  opacity: 0.8;
+  margin-top: 0.25rem;
 }
