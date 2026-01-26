@@ -1,31 +1,88 @@
 // src/components/CreateList/CreateList.jsx
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useState } from 'react';
+
 import Forecast from '../Forecast/Forecast.jsx';
 import LocationSearch from '../LocationSearch/LocationSearch.jsx';
 import styles from './CreateList.module.css';
+
 import { useWeatherList } from '../../hooks/useWeatherList.js';
 import * as listService from '../../services/listService.js';
+import * as forecastService from '../../services/forecastService.js';
+
+const EPS = 1e-6;
+const sameCoords = (aLon, aLat, bLon, bLat) =>
+  Math.abs(Number(aLon) - Number(bLon)) < EPS && Math.abs(Number(aLat) - Number(bLat)) < EPS;
 
 const CreateList = ({ mode }) => {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const initialLocation = state?.initialLocation;
   const { listId } = useParams();
 
+  const initialLocation = state?.initialLocation;
+
+  // Local list-in-progress (CreateList owns this)
   const { locations, setLocations, addLocation } = useWeatherList({
     initialLocation,
     limit: 20,
   });
 
   const [form, setForm] = useState({ name: '', description: '' });
+  const [loading, setLoading] = useState(mode === 'edit');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // ====== EDIT MODE: load list + build Forecast-friendly locations ======
+  useEffect(() => {
+    if (mode !== 'edit') return;
+    if (!listId) return;
+
+    (async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        const fetched = await listService.getList(listId);
+
+        // Prefill form
+        setForm({
+          name: fetched?.name ?? '',
+          description: fetched?.description ?? '',
+        });
+
+        // Build local "weatherData-like" objects for Forecast
+        const built = [];
+        for (const entry of fetched.locations || []) {
+          const locDoc = entry.location; // populated Location doc
+          if (!locDoc) continue;
+
+          // eslint-disable-next-line no-await-in-loop
+          const forecast = await forecastService.getWeather(locDoc.longitude, locDoc.latitude);
+
+          built.push({
+            _id: locDoc._id, // IMPORTANT: we keep DB id for reorder/remove/save
+            name: locDoc.name,
+            lon: locDoc.longitude,
+            lat: locDoc.latitude,
+            forecast,
+            source: 'init',
+          });
+        }
+
+        setLocations(built);
+      } catch (err) {
+        setError(err.message || 'Failed to load list for editing.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [mode, listId, setLocations]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  // ====== SAVE (create vs edit) ======
   const handleSave = async () => {
     setError('');
 
@@ -41,34 +98,92 @@ const CreateList = ({ mode }) => {
     try {
       setSaving(true);
 
-      // 1) create list
-      const created = await listService.createList({
+      // ---------- CREATE ----------
+      if (mode === 'create') {
+        const created = await listService.createList({
+          name: form.name.trim(),
+          description: form.description.trim(),
+        });
+
+        // Add each location IN CURRENT ORDER
+        for (const loc of locations) {
+          if (loc?.lon == null || loc?.lat == null) continue;
+
+          // eslint-disable-next-line no-await-in-loop
+          await listService.addLocationToList(created._id, {
+            name: loc.name,
+            longitude: loc.lon,
+            latitude: loc.lat,
+            description: '',
+          });
+        }
+
+        // Go to the route you actually have: /lists/:listId
+        navigate(`/lists/${created._id}`, {
+          state: { list: created, locations }, // optional fast-render
+        });
+        return;
+      }
+
+      // ---------- EDIT ----------
+      // 1) update metadata
+      await listService.updateList(listId, {
         name: form.name.trim(),
         description: form.description.trim(),
       });
 
-      // 2) add each location IN CURRENT ORDER (preserves order)
-      // Your weatherData objects use lon/lat (not longitude/latitude)
+      // 2) ensure every UI location exists in this list
+      //    (and ensure we have _id for reorder/remove)
       for (const loc of locations) {
-        if (loc?.lon == null || loc?.lat == null) continue;
+        if (loc?._id) continue;
 
         // eslint-disable-next-line no-await-in-loop
-        await listService.addLocationToList(created._id, {
+        const updatedList = await listService.addLocationToList(listId, {
           name: loc.name,
           longitude: loc.lon,
           latitude: loc.lat,
-          description: '', // optional for now
+          description: '',
         });
+
+        // find the created/upserted location id and attach it to this loc
+        const match = (updatedList.locations || []).find((e) => {
+          const doc = e.location;
+          return doc && sameCoords(doc.longitude, doc.latitude, loc.lon, loc.lat);
+        });
+
+        if (match?.location?._id) {
+          // attach id directly (ok — object is from state array)
+          // eslint-disable-next-line no-param-reassign
+          loc._id = match.location._id;
+        }
       }
 
-      // 3) navigate to ShowList
-      // Pass state so ShowList can render immediately without refetch
-      navigate(`/lists/${created._id}`, {
-        state: {
-          list: created,
-          // include the forecasts you already have
-          locations,
-        },
+      // 3) remove any locations that are no longer in UI
+      //    (fetch server list to compare, safest)
+      const serverNow = await listService.getList(listId);
+      const serverIds = (serverNow.locations || [])
+        .map((e) => e.location?._id)
+        .filter(Boolean)
+        .map(String);
+
+      const uiIds = locations
+        .map((l) => l._id)
+        .filter(Boolean)
+        .map(String);
+
+      for (const id of serverIds) {
+        if (!uiIds.includes(id)) {
+          // eslint-disable-next-line no-await-in-loop
+          await listService.removeLocationFromList(listId, id);
+        }
+      }
+
+      // 4) persist reorder (0..n-1) using UI order
+      await listService.reorderListLocations(listId, uiIds);
+
+      // 5) go to ShowList
+      navigate(`/lists/${listId}`, {
+        state: { list: { ...serverNow, name: form.name.trim(), description: form.description.trim() }, locations },
       });
     } catch (err) {
       setError(err.message || 'Failed to save list.');
@@ -77,11 +192,15 @@ const CreateList = ({ mode }) => {
     }
   };
 
+  if (loading) {
+    return <main className={styles.container}>Loading…</main>;
+  }
+
   return (
     <main className={styles.container}>
-      {mode === 'create' ? <h2>Create a List</h2> : <h2>Edit List {listId}</h2>}
+      <h2>{mode === 'create' ? 'Create a List' : `Edit List`}</h2>
 
-      {/* Title + description */}
+      {/* Title + description inputs */}
       <div className={styles.formRow}>
         <label>
           Title
@@ -89,7 +208,7 @@ const CreateList = ({ mode }) => {
             name="name"
             value={form.name}
             onChange={handleChange}
-            placeholder="e.g. Favorite ski towns"
+            placeholder="e.g. Favorite trailheads"
           />
         </label>
 
@@ -103,19 +222,14 @@ const CreateList = ({ mode }) => {
           />
         </label>
 
-        {error && <p className={styles.error}>{error}</p>}
+        {error ? <p className={styles.error}>{error}</p> : null}
 
         <button type="button" onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving…' : 'Save List'}
+          {saving ? 'Saving…' : mode === 'create' ? 'Save List' : 'Save Changes'}
         </button>
       </div>
 
-      <Forecast
-        locations={locations}
-        setLocations={setLocations}
-        reorderable={true}
-        limit={20}
-      />
+      <Forecast locations={locations} setLocations={setLocations} reorderable={true} limit={20} />
 
       <LocationSearch getWeather={addLocation} autoLoad={false} />
     </main>
@@ -123,4 +237,3 @@ const CreateList = ({ mode }) => {
 };
 
 export default CreateList;
-

@@ -38,8 +38,16 @@ const ShowLocation = () => {
 
   return (
     <main className={styles.container}>
-      <Forecast weatherData={weatherData} mode="pinFirst" limit={5} />
-      <LocationSearch getWeather={getWeather} autoLoad={false} />
+      <Forecast
+        weatherData={weatherData}
+        mode="pinFirst"
+        reorderable={true}
+        limit={5}
+      />
+      <LocationSearch
+        getWeather={getWeather}
+        autoLoad={false}
+      />
     </main>
   );
 };

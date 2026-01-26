@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import styles from './Forecast.module.css';
 import ForecastLocationRow from '../ForecastLocationRow/ForecastLocationRow.jsx';
+import * as listService from '../../services/listService.js';
 
 const dateKeyFromStartTime = (startTime) => startTime?.slice(0, 10);
 
@@ -34,12 +35,32 @@ const Forecast = ({
   locations: controlledLocations,
   setLocations: setControlledLocations,
 
-  // NEW
   reorderable = false,
 }) => {
   const [internalLocations, setInternalLocations] = useState([]);
   const locations = controlledLocations ?? internalLocations;
   const setLocations = setControlledLocations ?? setInternalLocations;
+
+  // ✅ Fetch lists once (so each row can show them)
+  const [lists, setLists] = useState([]);
+
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        const data = await listService.getMyLists();
+        if (alive) setLists(Array.isArray(data) ? data : []);
+      } catch {
+        // If user is logged out / 401, just show no lists.
+        if (alive) setLists([]);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!weatherData?.name) return;
@@ -68,7 +89,6 @@ const Forecast = ({
     });
   }, [weatherData, mode, limit, initialTopName, setLocations]);
 
-  // reorder helpers (only used when reorderable = true)
   const moveLocation = (fromIdx, toIdx) => {
     setLocations((prev) => {
       if (toIdx < 0 || toIdx >= prev.length) return prev;
@@ -111,6 +131,7 @@ const Forecast = ({
             key={loc.name}
             weatherData={loc}
             dayColumns={dayColumns}
+            lists={lists} // ✅ pass lists down
             reorder={
               reorderable
                 ? { enabled: true, index: idx, total: locations.length, onMove: moveLocation, onRemove: removeLocation }
@@ -124,4 +145,3 @@ const Forecast = ({
 };
 
 export default Forecast;
-

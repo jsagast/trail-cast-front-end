@@ -11,6 +11,7 @@ const Landing = () => {
       <Forecast
         weatherData={weatherData}
         mode="newestTop"
+        reorderable={true}
         limit={5}
         initialTopName="Your Location"
       />

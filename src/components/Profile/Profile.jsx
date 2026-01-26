@@ -8,6 +8,7 @@ const Profile = () => {
   const [lists, setLists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -23,6 +24,25 @@ const Profile = () => {
       }
     })();
   }, []);
+
+  const handleDelete = async (listId) => {
+    const ok = window.confirm('Delete this list? This cannot be undone.');
+    if (!ok) return;
+
+    try {
+      setDeletingId(listId);
+      setError('');
+
+      await listService.deleteList(listId);
+
+      // remove it from the UI immediately
+      setLists((prev) => prev.filter((l) => l._id !== listId));
+    } catch (err) {
+      setError(err.message || 'Failed to delete list.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (loading) return <main className={styles.container}>Loading…</main>;
   if (error) return <main className={styles.container}>{error}</main>;
@@ -45,12 +65,30 @@ const Profile = () => {
           <ul className={styles.list}>
             {lists.map((l) => (
               <li key={l._id} className={styles.listItem}>
+                {/* Left side: view link */}
                 <Link to={`/lists/${l._id}`} className={styles.listLink}>
                   <div className={styles.listTitle}>{l.name}</div>
                   {l.description ? (
                     <div className={styles.listDesc}>{l.description}</div>
                   ) : null}
                 </Link>
+
+                {/* Right side: actions */}
+                <div className={styles.actions}>
+                  <Link className={styles.editBtn} to={`/lists/${l._id}/edit`}>
+                    Edit
+                  </Link>
+
+                  <button
+                    type="button"
+                    className={styles.deleteBtn}
+                    onClick={() => handleDelete(l._id)}
+                    disabled={deletingId === l._id}
+                    aria-label={`Delete list ${l.name}`}
+                  >
+                    {deletingId === l._id ? '…' : 'Delete'}
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -61,3 +99,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

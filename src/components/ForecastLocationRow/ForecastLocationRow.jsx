@@ -1,10 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import styles from './ForecastLocationRow.module.css';
+import * as listService from '../../services/listService.js';
 
 const dateKeyFromStartTime = (startTime) => startTime?.slice(0, 10);
 
-// deterministic index from a string (so it doesn't change every render)
 const variantIndexFromKey = (key, mod = 3) => {
   if (!key) return 0;
   let hash = 0;
@@ -14,11 +14,13 @@ const variantIndexFromKey = (key, mod = 3) => {
   return hash % mod;
 };
 
-const ForecastLocationRow = ({ weatherData, dayColumns, reorder }) => {
+const ForecastLocationRow = ({ weatherData, dayColumns, reorder, lists = [] }) => {
   const navigate = useNavigate();
-  const [listChoice, setListChoice] = useState('');
 
-  const lists = []; // TODO: replace with real lists when you fetch them
+  // dropdown state
+  const [listChoice, setListChoice] = useState('');
+  const [selectLabel, setSelectLabel] = useState('Add to list?');
+  const [savingToList, setSavingToList] = useState(false);
 
   // Build lookup: dateKey -> { day, night }
   const byDate = {};
@@ -30,17 +32,41 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder }) => {
     else byDate[dk].night = p;
   }
 
-  const handleListChange = (e) => {
+  const handleListChange = async (e) => {
     const value = e.target.value;
     setListChoice('');
 
-    if (value === 'new list') {
+    if (value === 'new') {
       navigate('/lists/new', { state: { initialLocation: weatherData } });
       return;
     }
 
-    // later: if value is existing listId, navigate to edit page
-    // navigate(`/lists/${value}/edit`, { state: { initialLocation: weatherData } });
+    // add to an existing list
+    try {
+      setSavingToList(true);
+
+      const picked = lists.find((l) => l._id === value);
+      const listName = picked?.name ?? 'list';
+
+      await listService.addLocationToList(value, {
+        name: weatherData.name,
+        longitude: Number(weatherData.lon),
+        latitude: Number(weatherData.lat),
+        description: '',
+      });
+
+      setSelectLabel(`Added to ${listName} ✓`);
+    } catch (err) {
+      // 409 from backend → already in list
+      setSelectLabel(err.message || 'Could not add');
+    } finally {
+      setSavingToList(false);
+    }
+  };
+
+  const handleSelectOpen = () => {
+    // only reset if we’re currently showing a success message
+    if (selectLabel !== 'Add to list?') setSelectLabel('Add to list?');
   };
 
   const renderHalf = (period, isNight) => {
@@ -84,7 +110,6 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder }) => {
   return (
     <>
       <div className={styles.locationCell}>
-
         <Link
           to={`/location?name=${encodeURIComponent(weatherData.name)}&lon=${weatherData.lon}&lat=${weatherData.lat}`}
           state={{ weatherData }}
@@ -92,12 +117,15 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder }) => {
           {weatherData.name}
         </Link>
 
-        {/* Reorder buttons (optional, only if passed in) */}
         {reorder?.enabled && (
           <div className={styles.reorderControls}>
             <button
               type="button"
-              onClick={() => reorder.onMove(reorder.index, reorder.index - 1)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                reorder.onMove(reorder.index, reorder.index - 1);
+              }}
               disabled={reorder.index === 0}
               aria-label="Move up"
             >
@@ -105,7 +133,11 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder }) => {
             </button>
             <button
               type="button"
-              onClick={() => reorder.onMove(reorder.index, reorder.index + 1)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                reorder.onMove(reorder.index, reorder.index + 1);
+              }}
               disabled={reorder.index === reorder.total - 1}
               aria-label="Move down"
             >
@@ -113,7 +145,11 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder }) => {
             </button>
             <button
               type="button"
-              onClick={() => reorder.onRemove(reorder.index)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                reorder.onRemove(reorder.index);
+              }}
               aria-label="Remove"
             >
               ✕
@@ -126,9 +162,13 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder }) => {
           name="listId"
           value={listChoice}
           onChange={handleListChange}
+          onMouseDown={handleSelectOpen}
+          onFocus={handleSelectOpen}
+          disabled={savingToList}
         >
-          <option value="" disabled hidden>
-            Add to list?
+          
+          <option value="" disabled>
+            {savingToList ? 'Adding…' : selectLabel}
           </option>
 
           {lists.map((list) => (
@@ -137,7 +177,7 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder }) => {
             </option>
           ))}
 
-          <option value="new list">new list</option>
+          <option value="new">+ new list</option>
         </select>
       </div>
 

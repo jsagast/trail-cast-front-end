@@ -18,17 +18,58 @@
   gap: 0.75rem;
 }
 
+/* CHANGED: make each item a row with a right-side actions area */
 .listItem {
+  display: flex;              /* NEW */
+  align-items: stretch;       /* NEW */
   border: 1px solid #ddd;
   border-radius: 12px;
   overflow: hidden;
 }
 
+/* CHANGED: link becomes the left "main" area */
 .listLink {
+  flex: 1;                    /* NEW */
   display: block;
   padding: 0.9rem 1rem;
   text-decoration: none;
   color: inherit;
+}
+
+/* NEW: right-side action buttons */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-left: 1px solid #eee;
+  background: #fafafa;
+}
+
+/* NEW */
+.editBtn {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-weight: 700;
+  color: inherit;
+  background: #fff;
+}
+
+/* NEW */
+.deleteBtn {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  background: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.deleteBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .listTitle {

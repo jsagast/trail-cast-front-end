@@ -225,12 +225,12 @@ export const reorderListLocations = async (listId, orderedLocationIds) => {
   });
 };
 
-// ---------- Optional "power helper" for CreateList ----------
+// ---------- CreateList ----------
 /**
- * Convenience helper: create a list AND add locations in current order.
- * This matches your CreateList workflow and keeps ordering stable.
+ * create a list AND add locations in current order.
+ * matches CreateList workflow and keeps ordering stable.
  *
- * locations should look like your existing weather objects:
+ * locations look like existing weather objects:
  *   { name, lon, lat, ... }
  */
 export const createListWithLocations = async ({
