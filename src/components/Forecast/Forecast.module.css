@@ -8,12 +8,28 @@
 
   display: grid;
   border: 1px solid #ddd;
+
+  /* The key change: we constrain the viewport to 5 day columns (plus left col) */
+  width: 100%;
+  max-width: calc(var(--left-col-w) + (var(--day-col-w) * 5));
+  min-width: 0;
+
   overflow-x: auto;
   overflow-y: hidden;
   box-sizing: border-box;
 
-  /* important for horizontal scrolling grids */
-  min-width: max-content;
+  /* makes manual scroll feel good; buttons use JS scrollTo anyway */
+  scroll-behavior: smooth;
+
+  /* optional: hide scrollbar but keep scroll working */
+  scrollbar-width: none;
+}
+
+.table::-webkit-scrollbar {
+  display: none;
+
+  position: relative;
+  isolation: isolate;
 }
 
 .corner {
@@ -37,7 +53,33 @@
   position: sticky;
   left: 0;
   top: 0;
-  z-index: 3; /* above headers */
+  z-index: 10;
+}
+
+.cornerInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dayNav {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.dayNav button {
+  font-weight: 800;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid #ccc;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dayNav button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .dayHeader {
