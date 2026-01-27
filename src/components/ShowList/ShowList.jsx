@@ -43,7 +43,7 @@ const ShowList = () => {
         const fetched = await listService.getList(listId);
         setList(fetched);
 
-        // Safely initialize comments
+        // sets the comments when loading
         setComments(
           fetched.comments?.map(comment => ({
             _id: comment._id,

@@ -24,7 +24,31 @@ const getWeather = async (longitude, latitude) => {
     }
 };
 
+const createLocation = async (locationData) => {
+  try {
+    const res = await fetch(`${BASE_URL}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: JSON.stringify(locationData),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed to create location');
+    }
+
+    return await res.json(); 
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
 export {
     searchLocations,
     getWeather,
+    createLocation,
 }
