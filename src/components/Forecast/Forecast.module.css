@@ -1,7 +1,7 @@
 .table {
   /* controls */
-  --left-col-w: 180px;  /* <-- change left column width here */
-  --day-col-w: 240px;   /* <-- change day column width here */
+  --left-col-w: 180px;  /* left sticky column width */
+  --day-col-w: 240px;   /* each day column width */
 
   --header-h: 64px;     /* header row height */
   --cell-h: 190px;      /* each location row height */
@@ -9,7 +9,7 @@
   display: grid;
   border: 1px solid #ddd;
 
-  /* The key change: we constrain the viewport to 5 day columns (plus left col) */
+  /* Show a 5-day window by default, but allow shrinking on small screens */
   width: 100%;
   max-width: calc(var(--left-col-w) + (var(--day-col-w) * 5));
   min-width: 0;
@@ -18,22 +18,22 @@
   overflow-y: hidden;
   box-sizing: border-box;
 
-  /* makes manual scroll feel good; buttons use JS scrollTo anyway */
+  /* nice feel; JS uses scrollTo smooth as well */
   scroll-behavior: smooth;
 
-  /* optional: hide scrollbar but keep scroll working */
+  /* hide scrollbar but keep scroll working */
   scrollbar-width: none;
-}
 
-.table::-webkit-scrollbar {
-  display: none;
-
+  /* predictable stacking context */
   position: relative;
   isolation: isolate;
 }
 
+.table::-webkit-scrollbar {
+  display: none;
+}
+
 .corner {
-  /* fill the grid cell */
   height: 100%;
   width: 100%;
 

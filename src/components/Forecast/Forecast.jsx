@@ -3,7 +3,13 @@ import styles from './Forecast.module.css';
 import ForecastLocationRow from '../ForecastLocationRow/ForecastLocationRow.jsx';
 import { ListsContext } from '../../contexts/ListsContext.jsx';
 
-const WINDOW_DAYS = 5;
+const MAX_WINDOW_DAYS = 5;
+
+const readCssPx = (el, varName, fallback) => {
+  const v = getComputedStyle(el).getPropertyValue(varName).trim();
+  const n = parseFloat(v.replace('px', ''));
+  return Number.isFinite(n) ? n : fallback;
+};
 
 const dateKeyFromStartTime = (startTime) => startTime?.slice(0, 10); // "YYYY-MM-DD"
 
@@ -24,7 +30,7 @@ const buildDayColumns = (forecast) => {
     order.push(dk);
   }
 
-  // Keep up to 7 days of columns available, but we will only DISPLAY 5 at a time.
+  // Keep up to 7 days available from NWS, but we will DISPLAY a window.
   return order.slice(0, 7).map((dk) => ({ dateKey: dk, label: weekdayLabel(dk) }));
 };
 
@@ -69,41 +75,76 @@ const Forecast = ({
     return buildDayColumns(locations[0]?.forecast);
   }, [locations]);
 
-  // window offset (0..maxOffset), where 0 shows the first 5 days
+  // window offset (0..maxOffset)
   const [dayOffset, setDayOffset] = useState(0);
 
-  const maxOffset = useMemo(() => Math.max(0, dayColumns.length - WINDOW_DAYS), [dayColumns.length]);
+  // how many day columns are visible right now (<= 5)
+  const [visibleDays, setVisibleDays] = useState(MAX_WINDOW_DAYS);
+
+  const windowDays = Math.max(1, Math.min(visibleDays, dayColumns.length));
+  const maxOffset = Math.max(0, dayColumns.length - windowDays);
 
   // signature to detect column-set changes (new location / new forecast)
   const daySig = useMemo(() => dayColumns.map((c) => c.dateKey).join('|'), [dayColumns]);
 
-  // scrolling container ref for animation
+  // scroll container ref (we animate by scrollTo)
   const tableRef = useRef(null);
 
-  // Reset window when the underlying days change
-  useEffect(() => {
-    setDayOffset(0);
-
-    // jump to start immediately (no animation) on data changes
-    const el = tableRef.current;
-    if (el) el.scrollTo({ left: 0, behavior: 'auto' });
-  }, [daySig]);
-
-  // Clamp offset if columns shrink
-  useEffect(() => {
-    setDayOffset((v) => Math.min(v, maxOffset));
-  }, [maxOffset]);
-
-  // Animate the "slide" by smooth-scrolling exactly one day column per offset step
+  // Recompute visible day columns when the table resizes (window changes)
   useEffect(() => {
     const el = tableRef.current;
     if (!el) return;
 
-    const cssVal = getComputedStyle(el).getPropertyValue('--day-col-w').trim();
-    const dayPx = Number(cssVal.replace('px', '')) || 240;
+    const recompute = () => {
+      const dayPx = readCssPx(el, '--day-col-w', 240);
+      const leftPx = readCssPx(el, '--left-col-w', 180);
 
-    el.scrollTo({ left: dayOffset * dayPx, behavior: 'smooth' });
-  }, [dayOffset]);
+      const fit = Math.floor((el.clientWidth - leftPx) / dayPx);
+      const days = Math.max(1, Math.min(MAX_WINDOW_DAYS, fit || 1));
+
+      setVisibleDays(days);
+    };
+
+    recompute();
+
+    let ro;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(recompute);
+      ro.observe(el);
+    } else {
+      window.addEventListener('resize', recompute);
+    }
+
+    return () => {
+      if (ro) ro.disconnect();
+      else window.removeEventListener('resize', recompute);
+    };
+  }, [dayColumns.length]);
+
+  // Reset window when the underlying days change (and start at the beginning)
+  useEffect(() => {
+    setDayOffset(0);
+    const el = tableRef.current;
+    if (el) el.scrollTo({ left: 0, behavior: 'auto' });
+  }, [daySig]);
+
+  // Clamp offset if the window gets smaller/larger
+  useEffect(() => {
+    setDayOffset((v) => Math.min(v, maxOffset));
+  }, [maxOffset]);
+
+  // Animate the slide: arrow clicks drive dayOffset; we scroll smoothly to that offset
+  useEffect(() => {
+    const el = tableRef.current;
+    if (!el) return;
+
+    const dayPx = readCssPx(el, '--day-col-w', 240);
+    const clamped = Math.max(0, Math.min(maxOffset, dayOffset));
+
+    if (clamped !== dayOffset) setDayOffset(clamped);
+
+    el.scrollTo({ left: clamped * dayPx, behavior: 'smooth' });
+  }, [dayOffset, maxOffset]);
 
   // Uncontrolled mode: merge incoming weatherData into the list
   useEffect(() => {
@@ -122,7 +163,7 @@ const Forecast = ({
         }
       }
 
-      // pin first row behavior (legacy mode)
+      // legacy "pinFirst" mode
       if (mode === 'pinFirst' && withoutThis.length) {
         const pinned = withoutThis[0];
         if (weatherData.name === pinned.name) return [weatherData, ...withoutThis.slice(1)].slice(0, limit);
@@ -147,10 +188,8 @@ const Forecast = ({
     setLocations((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // Must not early-return before hooks; hooks are above, so it’s safe now.
   if (!locations.length || !dayColumns.length) return <main>Forecast Loading</main>;
 
-  // Render all 7 columns in the grid, but CSS constrains viewport to 5 columns.
   const gridStyle = {
     gridTemplateColumns: `var(--left-col-w) repeat(${dayColumns.length}, var(--day-col-w))`,
     gridTemplateRows: `var(--header-h) repeat(${locations.length}, var(--cell-h))`,
