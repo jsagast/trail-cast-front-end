@@ -47,8 +47,20 @@ const createLocation = async (locationData) => {
   }
 };
 
+const getLocationByCoords = async (lat, lon) => {
+  try {
+    const res = await fetch(`${BASE_URL}by-coords?lat=${lat}&lon=${lon}`)
+    const location = await res.json();
+    return location
+  } catch (err) {
+    console.error('Error fetching location by coords:', err);
+    return null;
+  }
+};
+
 export {
     searchLocations,
     getWeather,
     createLocation,
+    getLocationByCoords,
 }

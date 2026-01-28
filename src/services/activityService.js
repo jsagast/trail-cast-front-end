@@ -16,38 +16,38 @@ const createActivity = async (locationId, activityFormData) => {
   }
 };
 
-// const updateActivity = async (locationId, logId, logFormData)=> {
-//   try {
-//     const res = await fetch(`${BASE_URL}/${locationId}/activities/${activityId}`, {
-//       method: 'PUT',
-//       headers: {
-//         Authorization: `Bearer ${localStorage.getItem('token')}`,
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify(logFormData),
-//     });
-//     return res.json();
-//   } catch (error) {
-//     console.log(error);
-//   }
-// };
+const updateActivity = async (locationId, activityId, logFormData)=> {
+  try {
+    const res = await fetch(`${BASE_URL}/${locationId}/activities/${activityId}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(logFormData),
+    });
+    return res.json();
+  } catch (error) {
+    console.log(error);
+  }
+};
 
-// const deleteActivity = async (locationId, logId) => {
-//   try {
-//     const res = await fetch(`${BASE_URL}/${locationId}/activities/${activityId}`, {
-//       method: 'DELETE',
-//       headers: {
-//         Authorization: `Bearer ${localStorage.getItem('token')}`,
-//       },
-//     });
-//     return res.json();
-//   } catch (error) {
-//     console.log(error);
-//   }
-// };
+const deleteActivity = async (locationId, activityId) => {
+  try {
+    const res = await fetch(`${BASE_URL}/${locationId}/activities/${activityId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return res.json();
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 export {
     createActivity,
-    // updateActivity,
-    // deleteActivity
+    updateActivity,
+    deleteActivity
 }

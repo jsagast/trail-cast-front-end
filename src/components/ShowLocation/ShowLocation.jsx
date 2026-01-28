@@ -22,10 +22,7 @@ const ShowLocation = () => {
 
   const { weatherData, setWeatherData, getWeather } = useWeather();
 
-  useEffect(() => {//log to see activities
-    console.log('weatherData:', weatherData);
-  }, [weatherData]);
-
+  const [savedLocation, setSavedLocation] = useState(null);
   const [activities, setActivities] = useState([]);
   const [editingActivity, setEditingActivity] = useState(null);
   const [error, setError] = useState('');
@@ -63,29 +60,49 @@ const ShowLocation = () => {
   }, [passed, lon, lat, name, getWeather]);
 
 
-  useEffect(() => {
-    if (!weatherData?.activities) return;
-    setActivities(formatActivities(weatherData.activities));
-  }, [weatherData]);
+useEffect(() => {
+  const fetchSavedLocation = async () => {
+    if (!weatherData) return;
+
+    try {
+      const location = await forecastService.getLocationByCoords(
+        weatherData.lat,
+        weatherData.lon
+      );
+
+      if (location) {
+        setSavedLocation(location);
+        setActivities(formatActivities(location.activities || []));
+      } else {
+        setSavedLocation(null);
+        setActivities([]);
+      };
+
+    } catch (err) {
+      console.error('Failed to fetch saved location:', err);
+      setError('Failed to load activities.');
+    }
+  };
+
+  fetchSavedLocation();
+}, [weatherData]);
 
   const handleAddActivity = async (activityFormData) => {
     try {
-      let savedLocation;
-
-      if (!weatherData?._id) {
-        const locationToSave = {
+ 
+      if (!location) {
+        location = await forecastService.createLocation({
           name: weatherData.name,
           latitude: weatherData.lat,
           longitude: weatherData.lon
-        };
-        savedLocation = await forecastService.createLocation(locationToSave);
-      } else {
-        savedLocation = weatherData; // assuming weatherData already has _id
-      }
+        });
 
+        setSavedLocation(location);
+      }
       console.log(savedLocation._id);
 
       const newActivity = await activityService.createActivity(
+        // location._id,
         savedLocation._id,
         activityFormData
       );
@@ -111,7 +128,7 @@ const ShowLocation = () => {
   const handleDeleteActivity = async (activityId) => {
     if (!window.confirm('Delete this activity?')) return;
 
-    await activityService.deleteActivity(weatherData._id, activityId);
+    await activityService.deleteActivity(savedLocation._id, activityId);
 
     setActivities(activities =>
       activities.filter(activity => activity._id !== activityId)
@@ -127,7 +144,7 @@ const ShowLocation = () => {
       const { _id, text, day } = updatedActivityForm;
 
       const updatedActivity = await activityService.updateActivity(
-        weatherData._id,
+        savedLocation._id,
         _id,
         { text, day }
       );
