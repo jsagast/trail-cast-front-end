@@ -134,9 +134,26 @@ const ForecastLocationRow = ({
         description: '',
       });
 
-      setSelectLabel('Added!');
+      setSelectLabel('✅ Added');
     } catch (err) {
-      setSelectLabel('Failed to add');
+      // Try to pull out a useful message regardless of how listService throws
+      const status = err?.status ?? err?.response?.status ?? err?.cause?.status;
+      const rawMsg =
+        err?.message ??
+        err?.err ??
+        err?.data?.err ??
+        err?.response?.data?.err ??
+        '';
+
+      const msg = String(rawMsg);
+      const normalized = msg.toLowerCase();
+
+      const isDuplicate =
+        status === 409 ||
+        normalized.includes('already in this list') ||
+        normalized.includes('already in list');
+
+      setSelectLabel(isDuplicate ? '❌ Already in list' : '❌ Failed to add');
     } finally {
       setSavingToList(false);
     }
@@ -210,8 +227,8 @@ const ForecastLocationRow = ({
           {p.temperature}°{p.temperatureUnit}
         </div>
         <div className={styles.meta}>
-          <span>{p.windSpeed}</span>
-          <span>{p.windDirection}</span>
+          <div>💧 {p.probabilityOfPrecipitation?.value ?? 0}%</div>
+          <div>༄ {p.windSpeed}</div>
         </div>
       </div>
     );

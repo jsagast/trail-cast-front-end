@@ -1,5 +1,6 @@
+// src/components/NavBar/NavBar.jsx
 import { useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { UserContext } from '../../contexts/UserContext';
 import styles from './NavBar.module.css';
 
@@ -7,17 +8,32 @@ import logo from '../../assets/images/logo.png';
 
 const NavBar = () => {
   const { user, setUser } = useContext(UserContext);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const handleSignOut = () => {
     localStorage.removeItem('token');
     setUser(null);
   };
 
+  const handleHomeClick = (e) => {
+    // Let users open in new tab/window, etc.
+    if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return;
+
+    // If we're already on the Landing route, force a reload.
+    if (location.pathname === '/') {
+      e.preventDefault();
+      // This uses the browser history API: history.go(0) == reload current page
+      navigate(0);
+      // альтернативно (also fine): window.location.reload();
+    }
+  };
+
   return (
     <nav className={styles.container}>
       {/* Left edge */}
       <div className={styles.left}>
-        <Link className={styles.edgeLink} to="/">
+        <Link className={styles.edgeLink} to="/" onClick={handleHomeClick}>
           Home
         </Link>
       </div>
