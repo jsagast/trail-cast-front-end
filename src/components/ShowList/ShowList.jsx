@@ -189,7 +189,6 @@ const ShowList = () => {
         locations={locations}
         reorderable={false}
         limit={20}
-        showListDropdown={false}
       />
 
       <section className={styles.comments}>

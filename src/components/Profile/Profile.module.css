@@ -1,18 +1,20 @@
-/* src/components/Profile/Profile.module.css */
-
 .container {
-  /* match Landing’s “clear fixed navbar” behavior */
   padding-top: 70px;
   padding-left: 24px;
   padding-right: 24px;
   padding-bottom: 48px;
   box-sizing: border-box;
 
-  /* centered page layout */
-  max-width: 980px;
-  margin: 0 auto;
+  /* Make centering actually work */
+  min-height: 100vh;
+  width: 100%;
 
-  /* readable on your black app background */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+
   color: rgba(255, 255, 255, 0.92);
 }
 
@@ -21,14 +23,22 @@
   font-size: 28px;
   font-weight: 800;
   letter-spacing: 0.2px;
+  text-align: center;
 }
 
 .section {
-  background: rgba(255, 255, 255, 0.06);
+  /* more contrast: panel is noticeably lighter than page bg */
+    background:
+  radial-gradient(1100px 700px at 0% 0%, rgba(251, 95, 4, 0.3), transparent 75%),
+  radial-gradient(1100px 700px at 40% 0%, rgba(240, 206, 26, 0.3), transparent 75%),
+  radial-gradient(1100px 700px at 100% 0%, rgba(5, 105, 168, 0.3), transparent 75%),
+  radial-gradient(1100px 700px at 100% 70%, rgba(27, 153, 168, 0.3), transparent 78%),
+  transparent;
   border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 18px;
   padding: 18px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.50);
+  width: min(980px, 90%);
 }
 
 .sectionHeader {
@@ -38,7 +48,7 @@
   gap: 12px;
 
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   margin-bottom: 12px;
 }
 
@@ -51,6 +61,7 @@
 .newBtn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 
   padding: 10px 12px;
@@ -60,21 +71,24 @@
   font-weight: 800;
   color: rgba(255, 255, 255, 0.95);
 
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  /* neutral button, tinted border */
+  background: #202020;
+  border: 1px solid rgba(56, 214, 107, 0.40);
 
-  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+  transition: transform 120ms ease, color 120ms ease, text-shadow 120ms ease;
 }
 
 .newBtn:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.22);
+  color: #38d66b; /* text-only green */
+  text-shadow: 0 0 10px rgba(56, 214, 107, 0.45);
 }
 
 .newBtn:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.6);
   outline-offset: 2px;
+
+  color: #38d66b;
+  text-shadow: 0 0 10px rgba(56, 214, 107, 0.45);
 }
 
 .error {
@@ -103,16 +117,16 @@
   border-radius: 14px;
   overflow: hidden;
 
-  background: rgba(255, 255, 255, 0.05);
+  /* more contrast: cards noticeably lighter than panel */
+  background: #2a2a2a;
   border: 1px solid rgba(255, 255, 255, 0.12);
 
   transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
 }
 
 .listItem:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.20);
+  background: #303030;
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .listLink {
@@ -123,7 +137,7 @@
   text-decoration: none;
   color: inherit;
 
-  min-width: 0; /* lets long names wrap instead of pushing actions off */
+  min-width: 0;
 }
 
 .listLink:focus-visible {
@@ -131,14 +145,26 @@
   outline-offset: -2px;
 }
 
+/* Title hover uses the Forecast-style gradient var --hoverColor */
 .listTitle {
   font-weight: 900;
   font-size: 16px;
   line-height: 1.2;
+
+  display: inline-block;
+  transition: color 120ms ease;
+}
+
+.listLink:hover .listTitle,
+.listLink:focus-visible .listTitle {
+  color: var(--hoverColor, rgba(255, 255, 255, 0.95));
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  text-decoration-color: currentColor;
 }
 
 .listDesc {
-  opacity: 0.8;
+  opacity: 0.82;
   margin-top: 6px;
   font-size: 14px;
   line-height: 1.25;
@@ -151,33 +177,65 @@
   gap: 10px;
 
   padding: 0 14px;
-  border-left: 1px solid rgba(255, 255, 255, 0.10);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
 
-  background: rgba(0, 0, 0, 0.18);
+  /* darker action strip = stronger separation */
+  background: #131313;
 }
 
 .editBtn,
 .deleteBtn {
+  /* IMPORTANT: normalize Link vs button typography */
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 800;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
   padding: 8px 10px;
   border-radius: 12px;
 
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.06);
+  /* neutral button, tinted border */
+  background: #202020;
+  border: 1px solid rgba(255, 255, 255, 0.14);
 
-  font-weight: 800;
   color: rgba(255, 255, 255, 0.92);
-
   cursor: pointer;
   text-decoration: none;
 
-  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+  /* text-only hover (no background/border changes) */
+  transition: transform 120ms ease, color 120ms ease, text-shadow 120ms ease;
 }
 
+/* remove default button styling differences */
+.deleteBtn {
+  appearance: none;
+}
+
+/* tinted borders like your original delete */
+.editBtn {
+  border-color: rgba(240, 206, 26, 0.40); /* yellow */
+}
+
+.deleteBtn {
+  border-color: rgba(255, 80, 80, 0.40); /* red */
+}
+
+/* Edit: text-only yellow */
 .editBtn:hover,
-.deleteBtn:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.10);
-  border-color: rgba(255, 255, 255, 0.26);
+.editBtn:focus-visible {
+  color: #f0ce1a;
+  text-shadow: 0 0 10px rgba(240, 206, 26, 0.45);
+}
+
+/* Delete: text-only red */
+.deleteBtn:hover,
+.deleteBtn:focus-visible {
+  color: #ff5252;
+  text-shadow: 0 0 10px rgba(255, 82, 82, 0.45);
 }
 
 .editBtn:focus-visible,
@@ -186,34 +244,22 @@
   outline-offset: 2px;
 }
 
-.deleteBtn {
-  border-color: rgba(255, 80, 80, 0.35);
-  background: rgba(255, 80, 80, 0.10);
-}
-
-.deleteBtn:hover {
-  border-color: rgba(255, 80, 80, 0.55);
-  background: rgba(255, 80, 80, 0.16);
-}
-
 .deleteBtn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   transform: none;
 }
 
-/* That extra <h3> at the bottom should look intentional */
 .section > h3:last-child {
   margin: 18px 0 0;
   padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 
   font-size: 16px;
   font-weight: 800;
   opacity: 0.85;
 }
 
-/* Mobile: stack actions under the list info */
 @media (max-width: 640px) {
   .container {
     padding-left: 16px;
@@ -226,13 +272,12 @@
 
   .actions {
     border-left: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.10);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
     justify-content: flex-end;
     padding: 12px 14px;
   }
 }
 
-/* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .newBtn,
   .listItem,
