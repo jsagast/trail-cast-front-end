@@ -57,6 +57,9 @@ const ForecastLocationRow = ({
   const measureRef = useRef(null);
   const dragDepth = useRef(0);
 
+  const linkRef = useRef(null);
+  const [isTwoLineTitle, setIsTwoLineTitle] = useState(false);
+
   const displayLabel =
     savingToList ? 'Adding…'
     : listsLoading ? 'Loading lists…'
@@ -78,6 +81,37 @@ const ForecastLocationRow = ({
   const resetLabelIfNeeded = () => {
     if (selectLabel !== DEFAULT_LABEL) setSelectLabel(DEFAULT_LABEL);
   };
+
+  useLayoutEffect(() => {
+    const el = linkRef.current;
+    if (!el) return;
+
+    const compute = () => {
+      const cs = window.getComputedStyle(el);
+
+      const lineHeight = parseFloat(cs.lineHeight); // px
+      const padTop = parseFloat(cs.paddingTop);
+      const padBottom = parseFloat(cs.paddingBottom);
+
+      const h = el.scrollHeight;
+
+      // one line of text + padding
+      const oneLine = lineHeight + padTop + padBottom;
+
+      // tolerance so we don’t flicker on fractional pixels
+      setIsTwoLineTitle(h > oneLine + 1);
+    };
+
+    compute();
+
+    // Recompute if the cell width changes (wrapping changes)
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(compute);
+    });
+
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [weatherData.name]);
 
   const handleListChange = async (e) => {
     const value = e.target.value;
@@ -186,7 +220,7 @@ const ForecastLocationRow = ({
   useLayoutEffect(() => {
     if (!selectRef.current || !measureRef.current) return;
 
-    const ARROW_PAD_PX = 44;
+    const ARROW_PAD_PX = 20;
     const textW = measureRef.current.getBoundingClientRect().width;
     selectRef.current.style.width = `${textW + ARROW_PAD_PX}px`;
   }, [displayLabel]);
@@ -219,7 +253,11 @@ const ForecastLocationRow = ({
         )}
 
         <Link
-          className={styles.locationLink}
+          ref={linkRef}
+          className={[
+            styles.locationLink,
+            isTwoLineTitle ? styles.locationLinkTwoLine : '',
+          ].join(' ')}
           style={titleColor ? { '--hoverColor': titleColor } : undefined}
           to={`/location?name=${encodeURIComponent(weatherData.name)}&lon=${weatherData.lon}&lat=${weatherData.lat}`}
           state={{ weatherData }}
