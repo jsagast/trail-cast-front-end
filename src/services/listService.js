@@ -83,6 +83,14 @@ export const createListWithLocations = async ({
   return created;
 };
 
+export const searchAllLists = async (q, { signal } = {}) => {
+  return await request(`${BASE_PATH}/search`, {
+    query: { q },
+    signal,
+    timeoutMs: 8000,
+  });
+};
+
 export default {
   getMyLists,
   createList,
@@ -93,5 +101,6 @@ export default {
   removeLocationFromList,
   reorderListLocations,
   createListWithLocations,
+  searchAllLists,
 };
 

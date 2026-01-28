@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect } from 'react';
 import Forecast from '../Forecast/Forecast.jsx';
 import LocationSearch from '../LocationSearch/LocationSearch.jsx';
-import styles from './Landing.module.css';
 import { useWeatherList } from '../../hooks/useWeatherList.js';
+import ListSearch from '../ListSearch/ListSearch.jsx';
+import styles from './Landing.module.css';
+
 
 // Seed locations with precomputed coords so Landing doesn't need Geoapify on load.
 const SEED_LOCATIONS = [
@@ -89,8 +91,6 @@ const Landing = () => {
     };
   }, [addLocationsBatch, addLocation]);
 
-  const isEmpty = useMemo(() => locations.length === 0, [locations]);
-
   return (
     <main className={styles.container}>
       <Forecast
@@ -100,12 +100,11 @@ const Landing = () => {
         mode="newestTop"
         reorderable={true}
         limit={5}
-        showListDropdown={false}
       />
 
       <LocationSearch getWeather={getWeather} autoLoad={false} />
 
-      {isEmpty && <div style={{ marginTop: 8, opacity: 0.8 }}>Loading forecasts…</div>}
+      <ListSearch />
     </main>
   );
 };

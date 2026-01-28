@@ -4,7 +4,7 @@
   --day-col-w: 240px;   /* each day column width */
 
   --header-h: 64px;     /* header row height */
-  --cell-h: 190px;      /* each location row height */
+  --cell-h: 180px;      /* each location row height */
 
   display: grid;
   border: 1px solid #ddd;

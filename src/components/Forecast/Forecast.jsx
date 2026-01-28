@@ -223,11 +223,11 @@ const Forecast = ({
     ));
 
   return (
-    <main>
+    <main className={styles.wrap}>
       <div ref={tableRef} className={styles.table} style={gridStyle}>
         <div className={styles.corner}>
           <div className={styles.cornerInner}>
-            <div>Weather for:</div>
+            <div className={styles.cornerTitle}>Weather</div>
 
             <div className={styles.dayNav}>
               <button

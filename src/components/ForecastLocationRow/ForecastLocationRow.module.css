@@ -1,3 +1,5 @@
+/* src/components/ForecastLocationRow/ForecastLocationRow.module.css */
+
 .locationCell {
   height: 100%;
   width: 100%;
@@ -21,6 +23,17 @@
   position: sticky;
   left: 0;
   z-index: 6;
+}
+
+.dragOver {
+  outline: 2px dashed #666;
+  outline-offset: -6px;
+}
+/* -------------------------------- */
+
+.locationCell select {
+  width: 90px;
+  max-width: 100%;
 }
 
 .reorderControls {
@@ -279,4 +292,51 @@
 
 @media (prefers-reduced-motion: reduce) {
   .night::before { animation: none; }
+}
+
+.listSelect {
+  box-sizing: border-box;
+  width: auto;     /* JS sets exact px width */
+  max-width: 100%;
+}
+
+.selectMeasure {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  visibility: hidden;
+  white-space: pre;
+  font: inherit;
+}
+
+.dragHandle {
+  user-select: none;
+
+  /* slightly bigger, not huge */
+  padding: 0.1rem 0.5rem;
+  font-size: 1.5rem;
+
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: white;
+  line-height: 1;
+}
+
+/* cursor ONLY when hovering the handle */
+.dragHandle:hover {
+  cursor: grab;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+/* While dragging, let the row be the drop target */
+.dragActive * {
+  pointer-events: none;
+}
+
+/* ...but keep the handle draggable */
+.dragActive .dragHandle {
+  pointer-events: auto;
 }

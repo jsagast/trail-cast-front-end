@@ -29,7 +29,7 @@ const Profile = () => {
 
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
-          <h3>Saved Lists</h3>
+          <h3>My lists</h3>
           <Link className={styles.newBtn} to="/lists/new">
             + New list
           </Link>
@@ -60,6 +60,8 @@ const Profile = () => {
             ))}
           </ul>
         )}
+
+        <h3>Saved lists</h3>
       </section>
     </main>
   );
