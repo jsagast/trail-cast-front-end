@@ -1,83 +1,250 @@
+/* src/components/Profile/Profile.module.css */
+
+.container {
+  /* match Landing’s “clear fixed navbar” behavior */
+  padding-top: 70px;
+  padding-left: 24px;
+  padding-right: 24px;
+  padding-bottom: 48px;
+  box-sizing: border-box;
+
+  /* centered page layout */
+  max-width: 980px;
+  margin: 0 auto;
+
+  /* readable on your black app background */
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.container h2 {
+  margin: 0 0 14px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.section {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
 .sectionHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 12px;
+
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  margin-bottom: 12px;
+}
+
+.sectionHeader h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
 }
 
 .newBtn {
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
   text-decoration: none;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.95);
+
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+.newBtn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.newBtn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
+}
+
+.error {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(176, 0, 32, 0.22);
+  border: 1px solid rgba(176, 0, 32, 0.35);
 }
 
 .list {
   list-style: none;
   padding: 0;
-  margin: 1rem 0 0;
+  margin: 14px 0 0;
+
   display: grid;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
 .listItem {
   display: flex;
   align-items: stretch;
-  border: 1px solid #ddd;
-  border-radius: 12px;
+
+  border-radius: 14px;
   overflow: hidden;
+
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.listItem:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.20);
 }
 
 .listLink {
   flex: 1;
   display: block;
-  padding: 0.9rem 1rem;
+  padding: 14px 14px;
+
   text-decoration: none;
   color: inherit;
+
+  min-width: 0; /* lets long names wrap instead of pushing actions off */
 }
 
-.error {
-  color: #b00020;
-  margin: 0.75rem 0 0;
+.listLink:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: -2px;
+}
+
+.listTitle {
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.listDesc {
+  opacity: 0.8;
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.25;
 }
 
 .actions {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0 1rem;
-  border-left: 1px solid #eee;
-  background: #fafafa;
+  gap: 10px;
+
+  padding: 0 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.10);
+
+  background: rgba(0, 0, 0, 0.18);
 }
 
-.editBtn {
-  padding: 0.35rem 0.6rem;
-  border: 1px solid #ddd;
-  border-radius: 0.5rem;
+.editBtn,
+.deleteBtn {
+  padding: 8px 10px;
+  border-radius: 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.92);
+
+  cursor: pointer;
   text-decoration: none;
-  font-weight: 700;
-  color: inherit;
-  background: #fff;
+
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.editBtn:hover,
+.deleteBtn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+.editBtn:focus-visible,
+.deleteBtn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
 }
 
 .deleteBtn {
-  padding: 0.35rem 0.6rem;
-  border: 1px solid #ddd;
-  border-radius: 0.5rem;
-  background: #fff;
-  font-weight: 700;
-  cursor: pointer;
+  border-color: rgba(255, 80, 80, 0.35);
+  background: rgba(255, 80, 80, 0.10);
+}
+
+.deleteBtn:hover {
+  border-color: rgba(255, 80, 80, 0.55);
+  background: rgba(255, 80, 80, 0.16);
 }
 
 .deleteBtn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
+  transform: none;
 }
 
-.listTitle {
+/* That extra <h3> at the bottom should look intentional */
+.section > h3:last-child {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+
+  font-size: 16px;
   font-weight: 800;
+  opacity: 0.85;
 }
 
-.listDesc {
-  opacity: 0.8;
-  margin-top: 0.25rem;
+/* Mobile: stack actions under the list info */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .listItem {
+    flex-direction: column;
+  }
+
+  .actions {
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.10);
+    justify-content: flex-end;
+    padding: 12px 14px;
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .newBtn,
+  .listItem,
+  .editBtn,
+  .deleteBtn {
+    transition: none;
+  }
+
+  .newBtn:hover,
+  .listItem:hover,
+  .editBtn:hover,
+  .deleteBtn:hover {
+    transform: none;
+  }
 }
