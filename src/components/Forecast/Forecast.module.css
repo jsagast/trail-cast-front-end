@@ -1,23 +1,41 @@
-.table {
-  /* controls */
-  --left-col-w: 180px;  /* <-- change left column width here */
-  --day-col-w: 240px;   /* <-- change day column width here */
+/* src/components/Forecast/Forecast.module.css */
 
-  --header-h: 64px;     /* header row height */
-  --cell-h: 190px;      /* each location row height */
+.table {
+  /* controls (UNCHANGED from your original) */
+  --left-col-w: 180px;  /* left sticky column width */
+  --day-col-w: 240px;   /* each day column width */
+
+  --header-h: 50px;     /* header row height */
+  --cell-h: 150px;      /* each location row height */
 
   display: grid;
-  border: 1px solid #ddd;
+
+  /* keep the 5-day window sizing EXACTLY the same */
+  width: 100%;
+  max-width: calc(var(--left-col-w) + (var(--day-col-w) * 5));
+  min-width: 0;
+
   overflow-x: auto;
   overflow-y: hidden;
   box-sizing: border-box;
 
-  /* important for horizontal scrolling grids */
-  min-width: max-content;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+
+  position: relative;
+  isolation: isolate;
+
+  /* NEW: clean dark background + subtle border/shadow (does not affect sizing) */
+  background: #1f2937; /* dark gray */
+  border: none;
+  box-shadow: 0 0 10px 15px rgba(255, 255, 255, 0.10);
+}
+
+.table::-webkit-scrollbar {
+  display: none;
 }
 
 .corner {
-  /* fill the grid cell */
   height: 100%;
   width: 100%;
 
@@ -29,15 +47,63 @@
   padding: 0.75rem;
   text-align: center;
 
-  background: #f2f2f2;
-  border-right: 1px solid #ddd;
-  border-bottom: 1px solid #ddd;
+  background: #191919;
+  color: rgba(255, 255, 255, 0.92);
+
+  border-right: 1px solid rgba(255, 255, 255, 0.10);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
   box-sizing: border-box;
 
   position: sticky;
   left: 0;
   top: 0;
-  z-index: 3; /* above headers */
+  z-index: 10;
+}
+
+.cornerInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dayNav {
+  display: flex;
+  align-items: center;  /* vertical centering */
+  justify-content: center;
+  gap: 1rem;         /* more spacing between buttons */
+}
+
+
+.dayNav button {
+  display: inline-flex; /* centers the arrow inside the button */
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 16px;
+  font-weight: 1000;
+  letter-spacing: 0.02em;
+
+  /* slightly larger than reorder buttons */
+  padding: 0.35rem 0.75rem;
+  line-height: 1;
+
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, transform 120ms ease;
+}
+
+.dayNav button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.dayNav button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .dayHeader {
@@ -48,13 +114,17 @@
   align-items: center;
   justify-content: center;
 
-  font-weight: 800;
+  font-weight: 600;
+  font-size: 20px;
   padding: 0.75rem;
   text-align: center;
 
-  background: #f2f2f2;
-  border-bottom: 1px solid #ddd;
-  border-right: 1px solid #ddd;
+  /* NEW: match header styling */
+  background: #191919;
+  color: rgba(255, 255, 255, 0.92);
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  border-right: 1px solid rgba(255, 255, 255, 0.10);
   box-sizing: border-box;
 
   position: sticky;

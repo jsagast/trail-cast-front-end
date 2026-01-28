@@ -56,16 +56,3 @@
   background-color: #f5f5f5;
   color: #007bff;
 }
-
-.searchInput::placeholder {
-  transition: opacity 0.5s ease-in-out;
-  opacity: 1;
-}
-
-.fadeOut::placeholder {
-  opacity: 0;
-}
-
-.fadeIn::placeholder {
-  opacity: 1;
-}

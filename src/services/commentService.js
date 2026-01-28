@@ -1,4 +1,4 @@
-const BASE_URL = `${import.meta.env.VITE_BACK_END_SERVER_URL}/lists`;
+const BASE_PATH = '/lists';
 
 const createComment = async (listId, commentFormData) => {
   try {
@@ -46,8 +46,8 @@ const deleteComment = async (listId, commentId) => {
   }
 };
 
-export {
-    createComment,
-    updateComment,
-    deleteComment,
-}
+export default {
+  createComment,
+  updateComment,
+  deleteComment,
+};

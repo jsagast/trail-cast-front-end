@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap');
+
+/* Set the default inherited font for the whole app, but with fallbacks */
+:root {
+  font-family: "Open Sans", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* 3) Make sure the page uses the inherited font */
+body {
+  margin: 0;
+  font-family: inherit;
+  background-color: #000000;;
+}
+
+/* 4) (Optional but recommended) form controls don’t always inherit on all browsers */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}

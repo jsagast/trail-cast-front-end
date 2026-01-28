@@ -1,24 +1,9 @@
-const BASE_URL = `${import.meta.env.VITE_BACK_END_SERVER_URL}/users`;
+import { request } from './apiClient.js';
 
-const index = async () => {
-  try {
-    const res = await fetch(BASE_URL, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    });
+const BASE_PATH = '/users';
 
-    const data = await res.json();
-
-    if (data.err) {
-      throw new Error(data.err);
-    }
-
-    return data
-  } catch (err) {
-    console.log(err);
-    throw new Error(err);
-  }
+export const index = async () => {
+  return await request(BASE_PATH);
 };
 
-export {
-  index,
-};
+export default { index };

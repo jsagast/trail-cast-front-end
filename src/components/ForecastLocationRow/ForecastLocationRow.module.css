@@ -2,54 +2,203 @@
   height: 100%;
   width: 100%;
 
-  display: flex;
-  flex-direction: column;   /* <- stack */
-  align-items: center;
+  display: grid;
+  grid-template-rows:
+    auto
+    minmax(0.2rem, 0.4fr)
+    2.9rem
+    minmax(0.35rem, 1.2fr)
+    auto
+    minmax(0.2rem, 0.6fr)
+    auto;
   justify-content: center;
+  justify-items: center;
+  align-items: stretch;     /* center horizontally */
+  text-align: center;      /* center text */
 
-  gap: 0.4rem;              /* <- spacing between controls */
+  padding: 0.65rem 0.6rem;
 
-  font-weight: 800;
-  padding: 0.75rem;
-  text-align: center;
-
-  background: #f2f2f2;
-  border-right: 1px solid #ddd;
-  border-bottom: 1px solid #ddd;
+  background: #191919;
+  border-right: 1px solid rgba(255, 255, 255, 0.10);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
   box-sizing: border-box;
 
   position: sticky;
   left: 0;
-  z-index: 1;
+  z-index: 6;
 }
 
+/* Drag/drop state */
+.dragOver {
+  outline: 1px dashed rgba(255, 255, 255, 0.35);
+  outline-offset: -4px;
+}
+
+/* While dragging, let the row be the drop target */
+.dragActive * {
+  pointer-events: none;
+}
+
+/* ...but keep the handle draggable */
+.dragActive .dragHandle {
+  pointer-events: auto;
+}
+
+/* Drag handle — restore "old" size */
+.dragHandle {
+  grid-row: 1;
+  user-select: none;
+  transform: translateY(-4px);
+
+  padding: 0.1rem 3rem;   
+  font-size: 1.5rem;       
+  line-height: 1;
+
+  border-radius: 8px;
+  background: transparent;
+
+  color: rgba(255, 255, 255, 0.80);
+}
+
+.dragHandle:hover {
+  cursor: grab;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+/* Location name — centered */
+.locationLink {  grid-row: 3;
+  width: 100%;
+  box-sizing: border-box;
+  
+  color: rgba(255, 255, 255, 0.95);
+  text-decoration: none;
+
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.25;
+
+  padding: 0.2rem 0;
+
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  justify-self: stretch;
+  align-self: start;
+  transform: translateY(3px);
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.locationLinkTwoLine {
+  transform: translateY(-6px);
+}
+
+.locationLink:hover {
+  color: var(--hoverColor, rgba(255, 255, 255, 0.95));
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  text-decoration-color: currentColor;
+}
+
+/* Reorder controls — bigger buttons */
 .reorderControls {
+  grid-row: 5;
+  transform: translateY(-2px);
+  width: 100%;
   display: flex;
+  justify-content: center;
   gap: 0.35rem;
 }
 
 .reorderControls button {
-  font-weight: 800;
-  padding: 0.25rem 0.45rem;
-  border: 1px solid #ccc;
-  background: white;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 6px;
+
+  color: rgba(255, 255, 255, 0.90);
+  font-weight: 1000;
+
+  /* bigger than before */
+  padding: 0.25rem 0.55rem;
+  line-height: 1;
+
   cursor: pointer;
 }
 
+.reorderControls button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 .reorderControls button:disabled {
-  opacity: 0.45;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
+.listSelect {
+  grid-row: 7;
+  margin-top: 0rem;
+  transform: translateY(0px);
+
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+
+  /* smaller than before */
+  padding: 0.18rem 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+
+  cursor: pointer;
+  color-scheme: dark;              
+  background-color: transparent;   
+}
+
+.listSelect:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* The dropdown list items (works well in Chrome/Firefox/Edge) */
+.listSelect option {
+  background-color: #111827;       /* dark slate */
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* When an option is highlighted/selected */
+.listSelect option:checked,
+.listSelect option:hover {
+  background-color: #1f2937;
+}
+
+/* Hidden measurer for dropdown width (used by JS) */
+.selectMeasure {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  visibility: hidden;
+  white-space: pre;
+  font: inherit;
+}
+
+/* === Right-side forecast cells (unchanged) === */
 .cell {
   height: 100%;
   width: 100%;
 
-  border-right: 1px solid #ddd;
-  border-bottom: 1px solid #ddd;
-  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  background: 191919;
 
+  box-sizing: border-box;
   overflow: hidden;
 }
 
@@ -93,9 +242,7 @@
   inset: 0;
   pointer-events: none;
 
-  /* soft sun glow in top-right + faint sky haze */
   background:
-    radial-gradient(circle at 82% 18%, rgba(255, 214, 102, 0.55) 0 34px, transparent 58px),
     radial-gradient(circle at 18% 22%, rgba(120, 200, 255, 0.18) 0 80px, transparent 160px),
     linear-gradient(180deg, rgba(255,255,255,0.0), rgba(255,255,255,0.35));
 
@@ -109,7 +256,6 @@
   overflow: hidden;
 }
 
-/* star layer base */
 .night::before {
   content: "";
   position: absolute;
@@ -135,91 +281,11 @@
   z-index: 1;
 }
 
-.starsA::before {
-  background:
-    radial-gradient(circle at 8%  18%, rgba(255,255,255,0.90) 0 0.42px, transparent 1.35px),
-    radial-gradient(circle at 18% 72%, rgba(255,255,255,0.70) 0 0.38px, transparent 1.35px),
-    radial-gradient(circle at 30% 42%, rgba(255,255,255,0.82) 0 0.42px, transparent 1.35px),
-    radial-gradient(circle at 44% 88%, rgba(255,255,255,0.62) 0 0.36px, transparent 1.35px),
-    radial-gradient(circle at 58% 22%, rgba(255,255,255,0.86) 0 0.42px, transparent 1.35px),
-    radial-gradient(circle at 74% 60%, rgba(255,255,255,0.66) 0 0.36px, transparent 1.35px),
-    radial-gradient(circle at 90% 34%, rgba(255,255,255,0.84) 0 0.42px, transparent 1.35px),
-    radial-gradient(circle at 96% 84%, rgba(255,255,255,0.58) 0 0.34px, transparent 1.35px);
-}
-
-.starsB::before {
-  background:
-    radial-gradient(circle at 6%  64%, rgba(255,255,255,0.76) 0 0.40px, transparent 1.35px),
-    radial-gradient(circle at 14% 22%, rgba(255,255,255,0.92) 0 0.44px, transparent 1.35px),
-    radial-gradient(circle at 26% 90%, rgba(255,255,255,0.60) 0 0.34px, transparent 1.35px),
-    radial-gradient(circle at 40% 36%, rgba(255,255,255,0.84) 0 0.42px, transparent 1.35px),
-    radial-gradient(circle at 55% 76%, rgba(255,255,255,0.66) 0 0.36px, transparent 1.35px),
-    radial-gradient(circle at 68% 18%, rgba(255,255,255,0.90) 0 0.44px, transparent 1.35px),
-    radial-gradient(circle at 82% 52%, rgba(255,255,255,0.72) 0 0.40px, transparent 1.35px),
-    radial-gradient(circle at 94% 86%, rgba(255,255,255,0.58) 0 0.34px, transparent 1.35px);
-}
-
-.starsC::before {
-  background:
-    radial-gradient(circle at 10% 38%, rgba(255,255,255,0.86) 0 0.42px, transparent 1.35px),
-    radial-gradient(circle at 22% 14%, rgba(255,255,255,0.92) 0 0.44px, transparent 1.35px),
-    radial-gradient(circle at 34% 70%, rgba(255,255,255,0.68) 0 0.36px, transparent 1.35px),
-    radial-gradient(circle at 46% 92%, rgba(255,255,255,0.58) 0 0.34px, transparent 1.35px),
-    radial-gradient(circle at 60% 44%, rgba(255,255,255,0.80) 0 0.42px, transparent 1.35px),
-    radial-gradient(circle at 72% 10%, rgba(255,255,255,0.94) 0 0.44px, transparent 1.35px),
-    radial-gradient(circle at 84% 78%, rgba(255,255,255,0.64) 0 0.36px, transparent 1.35px),
-    radial-gradient(circle at 96% 26%, rgba(255,255,255,0.88) 0 0.42px, transparent 1.35px);
-}
-
-.starsD::before {
-  background:
-    radial-gradient(circle at 5%  20%, rgba(255,255,255,0.92) 0 0.44px, transparent 1.35px),
-    radial-gradient(circle at 16% 86%, rgba(255,255,255,0.60) 0 0.34px, transparent 1.35px),
-    radial-gradient(circle at 28% 56%, rgba(255,255,255,0.74) 0 0.40px, transparent 1.35px),
-    radial-gradient(circle at 42% 12%, rgba(255,255,255,0.94) 0 0.44px, transparent 1.35px),
-    radial-gradient(circle at 54% 74%, rgba(255,255,255,0.66) 0 0.36px, transparent 1.35px),
-    radial-gradient(circle at 70% 34%, rgba(255,255,255,0.82) 0 0.42px, transparent 1.35px),
-    radial-gradient(circle at 86% 92%, rgba(255,255,255,0.56) 0 0.34px, transparent 1.35px),
-    radial-gradient(circle at 96% 48%, rgba(255,255,255,0.78) 0 0.40px, transparent 1.35px);
-}
-
-.starsE::before {
-  background:
-    radial-gradient(circle at 12% 92%, rgba(255,255,255,0.58) 0 0.34px, transparent 1.35px),
-    radial-gradient(circle at 20% 46%, rgba(255,255,255,0.80) 0 0.42px, transparent 1.35px),
-    radial-gradient(circle at 32% 18%, rgba(255,255,255,0.92) 0 0.44px, transparent 1.35px),
-    radial-gradient(circle at 48% 64%, rgba(255,255,255,0.70) 0 0.38px, transparent 1.35px),
-    radial-gradient(circle at 62% 86%, rgba(255,255,255,0.60) 0 0.34px, transparent 1.35px),
-    radial-gradient(circle at 74% 28%, rgba(255,255,255,0.88) 0 0.42px, transparent 1.35px),
-    radial-gradient(circle at 88% 54%, rgba(255,255,255,0.74) 0 0.40px, transparent 1.35px),
-    radial-gradient(circle at 96% 12%, rgba(255,255,255,0.94) 0 0.44px, transparent 1.35px);
-}
-
-.starsF::before {
-  background:
-    radial-gradient(circle at 8%  48%, rgba(255,255,255,0.78) 0 0.40px, transparent 1.35px),
-    radial-gradient(circle at 18% 10%, rgba(255,255,255,0.94) 0 0.44px, transparent 1.35px),
-    radial-gradient(circle at 30% 84%, rgba(255,255,255,0.60) 0 0.34px, transparent 1.35px),
-    radial-gradient(circle at 46% 28%, rgba(255,255,255,0.86) 0 0.42px, transparent 1.35px),
-    radial-gradient(circle at 58% 92%, rgba(255,255,255,0.58) 0 0.34px, transparent 1.35px),
-    radial-gradient(circle at 72% 50%, rgba(255,255,255,0.76) 0 0.40px, transparent 1.35px),
-    radial-gradient(circle at 86% 16%, rgba(255,255,255,0.92) 0 0.44px, transparent 1.35px),
-    radial-gradient(circle at 98% 76%, rgba(255,255,255,0.62) 0 0.36px, transparent 1.35px);
-}
-
-.starsA::before { animation-duration: 3.6s; animation-delay: -0.4s; }
-.starsB::before { animation-duration: 4.2s; animation-delay: -1.1s; }
-.starsC::before { animation-duration: 3.9s; animation-delay: -2.0s; }
-.starsD::before { animation-duration: 4.6s; animation-delay: -0.8s; }
-.starsE::before { animation-duration: 3.4s; animation-delay: -1.6s; }
-.starsF::before { animation-duration: 4.0s; animation-delay: -2.6s; }
-
 @keyframes twinkle {
   0%, 100% { opacity: 0.75; filter: brightness(1); }
   50%      { opacity: 1;    filter: brightness(1.35); }
 }
 
-/* ensure inner text inherits the lighter night color */
 .night .condition,
 .night .temp,
 .night .meta,
@@ -227,31 +293,22 @@
   color: #eaf2ff;
 }
 
-/* slightly soften secondary text */
 .night .meta {
   opacity: 0.92;
 }
 
-/* optional: make the emoji/icons feel less harsh on dark bg */
 .night .icon {
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
 }
 
 .empty {
-  background: #fafafa;
-  color: #999;
-}
-
-.halfTitle {
-  font-size: 0.85rem;
-  font-weight: 800;
-  opacity: 0.8;
-  margin-bottom: 0.25rem;
+  background: #191919;
+  color: #191919;
 }
 
 .icon {
-  width: 42px;
-  height: 42px;
+  width: 75px;
+  height: 75px;
   margin-bottom: 0.25rem;
 }
 

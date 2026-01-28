@@ -1,5 +1,4 @@
-// src/components/LocationSearch/LocationSearch.jsx
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as forecastService from '../../services/forecastService.js';
 import styles from './LocationSearch.module.css';
 
@@ -36,109 +35,45 @@ const cities = [
   "Salt Lake City, UT",
 ];
 
-// pick N unique random items
-const pickRandomUnique = (arr, n) => {
-  const copy = [...arr];
-  const picked = [];
-  const count = Math.min(n, copy.length);
-  for (let i = 0; i < count; i++) {
-    const idx = Math.floor(Math.random() * copy.length);
-    picked.push(copy[idx]);
-    copy.splice(idx, 1);
-  }
-  return picked;
-};
-
-const LocationSearch = ({ getWeather, autoLoad = true }) => {
+const LocationSearch = ({ getWeather, autoLoad = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
 
-  // rotating placeholder
+  // rotating placeholder + fade (keep styling/behavior)
   const [cityIndex, setCityIndex] = useState(0);
   const [fade, setFade] = useState(true);
 
-  // keep latest getWeather without re-running mount effect
+  // keep latest getWeather without re-running effects
   const getWeatherRef = useRef(getWeather);
   useEffect(() => {
     getWeatherRef.current = getWeather;
   }, [getWeather]);
 
-  // StrictMode / re-render guard: run only once
-  const didInitRef = useRef(false);
-
-  const loadCityForecast = async (cityString) => {
-    try {
-      const searchData = await forecastService.searchLocations(cityString);
-      const place = searchData?.places?.[0];
-      if (!place) return;
-
-      // place must have latitude/longitude for your getWeather
-      await getWeatherRef.current(place, 'init');
-    } catch (err) {
-      console.error('Failed to load city forecast:', cityString, err);
-    }
+  const handleInputChange = (event) => {
+    setSearchTerm(event.target.value);
   };
 
+  // Debounced search
   useEffect(() => {
-    if (!autoLoad) return;
-    if (didInitRef.current) return;
-    didInitRef.current = true;
-
-    const loadRandomCities = async (count) => {
-      const randomCities = pickRandomUnique(cities, count);
-      for (const city of randomCities) {
-        // eslint-disable-next-line no-await-in-loop
-        await loadCityForecast(city);
-      }
-    };
-
-    if (!navigator.geolocation) {
-      loadRandomCities(5);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        // 1) user location — await so it happens first
-        await getWeatherRef.current(
-          {
-            name: 'Your Location',
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          },
-          'init'
-        );
-
-        // 2) four random cities
-        await loadRandomCities(4);
-      },
-      async () => {
-        // fallback: five random cities
-        await loadRandomCities(5);
-      }
-    );
-  }, [autoLoad]);
-
-  const handleInputChange = async (event) => {
-    const query = event.target.value;
-    setSearchTerm(query);
+    const query = searchTerm.trim();
 
     if (!query) {
       setSearchResults([]);
       return;
     }
 
-    try {
-      const searchData = await forecastService.searchLocations(query);
-      // ignore stale responses while user types
-      if (query === event.target.value) {
+    const t = setTimeout(async () => {
+      try {
+        const searchData = await forecastService.searchLocations(query);
         setSearchResults(searchData?.places || []);
+      } catch (err) {
+        console.error('Location search failed:', err);
+        setSearchResults([]);
       }
-    } catch (err) {
-      console.error('Location search failed:', err);
-      setSearchResults([]);
-    }
-  };
+    }, 300);
+
+    return () => clearTimeout(t);
+  }, [searchTerm]);
 
   const handleSelectLocation = (location) => {
     setSearchTerm('');
@@ -146,7 +81,7 @@ const LocationSearch = ({ getWeather, autoLoad = true }) => {
     getWeatherRef.current(location, 'user');
   };
 
-  // placeholder animation
+  // Placeholder animation (fade out, swap, fade in)
   useEffect(() => {
     const interval = setInterval(() => {
       setFade(false);
@@ -158,6 +93,10 @@ const LocationSearch = ({ getWeather, autoLoad = true }) => {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!autoLoad) return;
+  }, [autoLoad]);
 
   return (
     <div className={styles.searchContainer}>

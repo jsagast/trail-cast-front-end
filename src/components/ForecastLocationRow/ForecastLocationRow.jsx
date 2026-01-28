@@ -1,36 +1,99 @@
+// src/components/ForecastLocationRow/ForecastLocationRow.jsx
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import styles from './ForecastLocationRow.module.css';
 import * as listService from '../../services/listService.js';
 
 const dateKeyFromStartTime = (startTime) => startTime?.slice(0, 10);
 
-const variantIndexFromKey = (key, mod = 3) => {
-  if (!key) return 0;
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) {
-    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
-  }
-  return hash % mod;
+const DEFAULT_LABEL = 'Add to list?';
+
+const normalizeCoord = (n, decimals = 6) => {
+  const num = Number(n);
+  if (!Number.isFinite(num)) return NaN;
+  return Number(num.toFixed(decimals));
 };
 
-const ForecastLocationRow = ({ weatherData, dayColumns, reorder, lists = [] }) => {
+const ForecastLocationRow = ({
+  weatherData,
+  dayColumns,
+  reorder,
+  showListDropdown = true,
+  lists = [],
+  listsLoading = false,
+  listsError = '',
+  titleColor,
+}) => {
   const navigate = useNavigate();
 
-  // dropdown state
   const [listChoice, setListChoice] = useState('');
-  const [selectLabel, setSelectLabel] = useState('Add to list?');
+  const [selectLabel, setSelectLabel] = useState(DEFAULT_LABEL);
   const [savingToList, setSavingToList] = useState(false);
 
-  // Build lookup: dateKey -> { day, night }
-  const byDate = {};
-  for (const p of weatherData.forecast || []) {
-    const dk = dateKeyFromStartTime(p.startTime);
-    if (!dk) continue;
-    if (!byDate[dk]) byDate[dk] = { day: null, night: null };
-    if (p.isDaytime) byDate[dk].day = p;
-    else byDate[dk].night = p;
-  }
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+
+  const canDrag = !!reorder?.enabled;
+
+  const selectRef = useRef(null);
+  const measureRef = useRef(null);
+  const dragDepth = useRef(0);
+
+  const linkRef = useRef(null);
+  const [isTwoLineTitle, setIsTwoLineTitle] = useState(false);
+
+  const displayLabel =
+    savingToList ? 'Adding…'
+    : listsLoading ? 'Loading lists…'
+    : listsError ? 'Lists unavailable'
+    : selectLabel;
+
+  const byDate = useMemo(() => {
+    const map = {};
+    for (const p of weatherData.forecast || []) {
+      const dk = dateKeyFromStartTime(p.startTime);
+      if (!dk) continue;
+      if (!map[dk]) map[dk] = { day: null, night: null };
+      if (p.isDaytime) map[dk].day = p;
+      else map[dk].night = p;
+    }
+    return map;
+  }, [weatherData.forecast]);
+
+  const resetLabelIfNeeded = () => {
+    if (selectLabel !== DEFAULT_LABEL) setSelectLabel(DEFAULT_LABEL);
+  };
+
+  useLayoutEffect(() => {
+    const el = linkRef.current;
+    if (!el) return;
+
+    const compute = () => {
+      const cs = window.getComputedStyle(el);
+
+      const lineHeight = parseFloat(cs.lineHeight); // px
+      const padTop = parseFloat(cs.paddingTop);
+      const padBottom = parseFloat(cs.paddingBottom);
+
+      const h = el.scrollHeight;
+
+      // one line of text + padding
+      const oneLine = lineHeight + padTop + padBottom;
+
+      // tolerance so we don’t flicker on fractional pixels
+      setIsTwoLineTitle(h > oneLine + 1);
+    };
+
+    compute();
+
+    // Recompute if the cell width changes (wrapping changes)
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(compute);
+    });
+
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [weatherData.name]);
 
   const handleListChange = async (e) => {
     const value = e.target.value;
@@ -41,76 +104,159 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder, lists = [] }) =
       return;
     }
 
-    // add to an existing list
+    if (!value) return;
+
     try {
       setSavingToList(true);
 
-      const picked = lists.find((l) => l._id === value);
-      const listName = picked?.name ?? 'list';
-
       await listService.addLocationToList(value, {
         name: weatherData.name,
-        longitude: Number(weatherData.lon),
-        latitude: Number(weatherData.lat),
+        longitude: normalizeCoord(weatherData.lon),
+        latitude: normalizeCoord(weatherData.lat),
         description: '',
       });
 
-      setSelectLabel(`Added to ${listName} ✓`);
+      setSelectLabel('✅ Added');
     } catch (err) {
-      // 409 from backend → already in list
-      setSelectLabel(err.message || 'Could not add');
+      // Try to pull out a useful message regardless of how listService throws
+      const status = err?.status ?? err?.response?.status ?? err?.cause?.status;
+      const rawMsg =
+        err?.message ??
+        err?.err ??
+        err?.data?.err ??
+        err?.response?.data?.err ??
+        '';
+
+      const msg = String(rawMsg);
+      const normalized = msg.toLowerCase();
+
+      const isDuplicate =
+        status === 409 ||
+        normalized.includes('already in this list') ||
+        normalized.includes('already in list');
+
+      setSelectLabel(isDuplicate ? '❌ Already in list' : '❌ Failed to add');
     } finally {
       setSavingToList(false);
     }
   };
 
-  const handleSelectOpen = () => {
-    // only reset if we’re currently showing a success message
-    if (selectLabel !== 'Add to list?') setSelectLabel('Add to list?');
+  const handleDragStart = (e) => {
+    if (!canDrag) return;
+    setDragActive(true);
+    // store the source index in the drag payload
+    e.dataTransfer.setData('text/plain', String(reorder.index));
+    e.dataTransfer.effectAllowed = 'move';
   };
 
-  const renderHalf = (period, isNight) => {
-    if (!period) return <div className={`${styles.half} ${styles.empty}`}>—</div>;
+  const handleDragEnd = () => {
+    setDragActive(false);
+    setIsDragOver(false);
+    dragDepth.current = 0;
+  };
 
-    let nightStarsClass = '';
-    if (isNight) {
-      const variants = [
-        styles.starsA,
-        styles.starsB,
-        styles.starsC,
-        styles.starsD,
-        styles.starsE,
-        styles.starsF,
-      ];
-      const idx = variantIndexFromKey(period.startTime, variants.length);
-      nightStarsClass = variants[idx];
+  const handleDragOver = (e) => {
+    if (!canDrag) return;
+    e.preventDefault(); // REQUIRED to allow drop
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDragEnter = () => {
+    if (!canDrag) return;
+    dragDepth.current += 1;
+    if (dragDepth.current === 1) setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    if (!canDrag) return;
+    dragDepth.current -= 1;
+
+    if (dragDepth.current <= 0) {
+      dragDepth.current = 0;
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    if (!canDrag) return;
+
+    e.preventDefault();
+    setIsDragOver(false);
+    setDragActive(false);
+    dragDepth.current = 0;
+
+    const from = Number(e.dataTransfer.getData('text/plain'));
+    const to = reorder.index;
+
+    if (!Number.isFinite(from) || from === to) return;
+
+    reorder.onMove(from, to);
+  };
+
+  const renderHalf = (p, isNight) => {
+    if (!p) {
+      return <div className={`${styles.half} ${styles.empty}`}>—</div>;
     }
 
+    const base = isNight ? styles.night : styles.day;
+
     return (
-      <div
-        className={[
-          styles.half,
-          isNight ? styles.night : styles.day,
-          isNight ? nightStarsClass : '',
-        ].join(' ')}
-      >
-        <img src={period.icon} alt={period.shortForecast} className={styles.icon} />
-        <div className={styles.condition}>{period.shortForecast}</div>
+      <div className={`${styles.half} ${base}`}>
+        {p.icon && <img className={styles.icon} src={p.icon} alt={p.shortForecast || 'forecast icon'} />}
+        
         <div className={styles.temp}>
-          {period.temperature}°{period.temperatureUnit}
+          {p.temperature}°{p.temperatureUnit}
         </div>
         <div className={styles.meta}>
-          <div>💧 {period.probabilityOfPrecipitation?.value ?? 0}%</div>
-          <div>༄ {period.windSpeed}</div>
+          <div>💧 {p.probabilityOfPrecipitation?.value ?? 0}%</div>
+          <div>༄ {p.windSpeed}</div>
         </div>
       </div>
     );
   };
 
+  useLayoutEffect(() => {
+    if (!selectRef.current || !measureRef.current) return;
+
+    const ARROW_PAD_PX = 20;
+    const textW = measureRef.current.getBoundingClientRect().width;
+    selectRef.current.style.width = `${textW + ARROW_PAD_PX}px`;
+  }, [displayLabel]);
+
   return (
     <>
-      <div className={styles.locationCell}>
+      <div
+        className={[
+          styles.locationCell,
+          dragActive ? styles.dragActive : '',
+          isDragOver ? styles.dragOver : '',
+        ].join(' ')}
+        onDragOver={handleDragOver}
+        onDragOverCapture={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {reorder?.enabled && (
+          <div
+            className={styles.dragHandle}
+            draggable
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            aria-label="Drag to reorder"
+            title="Drag to reorder"
+          >
+            ⋮⋮
+          </div>
+        )}
+
         <Link
+          ref={linkRef}
+          className={[
+            styles.locationLink,
+            isTwoLineTitle ? styles.locationLinkTwoLine : '',
+          ].join(' ')}
+          style={titleColor ? { '--hoverColor': titleColor } : undefined}
           to={`/location?name=${encodeURIComponent(weatherData.name)}&lon=${weatherData.lon}&lat=${weatherData.lat}`}
           state={{ weatherData }}
         >
@@ -129,8 +275,9 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder, lists = [] }) =
               disabled={reorder.index === 0}
               aria-label="Move up"
             >
-              ↑
+              ▲
             </button>
+
             <button
               type="button"
               onClick={(e) => {
@@ -141,8 +288,9 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder, lists = [] }) =
               disabled={reorder.index === reorder.total - 1}
               aria-label="Move down"
             >
-              ↓
+              ▼
             </button>
+
             <button
               type="button"
               onClick={(e) => {
@@ -157,38 +305,50 @@ const ForecastLocationRow = ({ weatherData, dayColumns, reorder, lists = [] }) =
           </div>
         )}
 
-        <select
-          id="listId"
-          name="listId"
-          value={listChoice}
-          onChange={handleListChange}
-          onMouseDown={handleSelectOpen}
-          onFocus={handleSelectOpen}
-          disabled={savingToList}
-        >
-          
-          <option value="" disabled>
-            {savingToList ? 'Adding…' : selectLabel}
-          </option>
+        {showListDropdown && (
+          <>
+            <select
+              ref={selectRef}
+              className={styles.listSelect}
+              id="listId"
+              name="listId"
+              value={listChoice}
+              onChange={handleListChange}
+              onPointerDown={resetLabelIfNeeded}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') resetLabelIfNeeded();
+              }}
+              disabled={savingToList || listsLoading || !!listsError}
+            >
+              <option value="" disabled>
+                {displayLabel}
+              </option>
 
-          {lists.map((list) => (
-            <option key={list._id} value={list._id}>
-              {list.name}
-            </option>
-          ))}
+              {lists.map((list) => (
+                <option key={list._id} value={list._id}>
+                  {list.name}
+                </option>
+              ))}
 
-          <option value="new">+ new list</option>
-        </select>
+              <option value="new">+ Create new list</option>
+            </select>
+
+            <span ref={measureRef} className={styles.selectMeasure} aria-hidden="true">
+              {displayLabel}
+            </span>
+          </>
+        )}
       </div>
 
       {dayColumns.map(({ dateKey }) => {
-        const pair = byDate[dateKey] || { day: null, night: null };
+        const day = byDate[dateKey]?.day ?? null;
+        const night = byDate[dateKey]?.night ?? null;
 
         return (
-          <div key={`${weatherData.name}-${dateKey}`} className={styles.cell}>
+          <div key={dateKey} className={styles.cell}>
             <div className={styles.cellInner}>
-              {renderHalf(pair.day, false)}
-              {renderHalf(pair.night, true)}
+              {renderHalf(day, false)}
+              {renderHalf(night, true)}
             </div>
           </div>
         );

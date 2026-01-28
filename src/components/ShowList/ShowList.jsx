@@ -10,6 +10,12 @@ import { UserContext } from '../../contexts/UserContext';
 
 import styles from './ShowList.module.css';
 
+const coordKey = (lon, lat) => {
+  const lo = Math.round(Number(lon) * 10000) / 10000;
+  const la = Math.round(Number(lat) * 10000) / 10000;
+  return `${lo}|${la}`;
+};
+
 const ShowList = () => {
   const { user } = useContext(UserContext);
   const { listId } = useParams();
@@ -30,6 +36,7 @@ const ShowList = () => {
       return;
     }
 
+    // If navigated from CreateList and passed data, render immediately.
     if (state?.list && state?.locations?.length) {
       setLoading(false);
       return;
@@ -55,27 +62,60 @@ const ShowList = () => {
             },
           })) || []
         );
+        
+        // Collect populated Location docs in list order
+        const locDocs = (fetched.locations || [])
+          .map((entry) => entry.location)
+          .filter(Boolean);
+
+        if (!locDocs.length) {
+          setLocations([]);
+          setError('This list has no locations yet.');
+          return;
+        }
+
+        // Batch weather fetch (fast + resilient)
+        const batchInput = locDocs.map((loc) => ({
+          name: loc.name,
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+        }));
+
+        const batch = await forecastService.getWeatherBatch(batchInput);
+        const results = batch?.results ?? batch ?? [];
+
+        const byKey = new Map(
+          results
+            .filter((r) => Array.isArray(r.forecast) && r.forecast.length)
+            .map((r) => [coordKey(r.lon ?? r.longitude, r.lat ?? r.latitude), r])
+        );
 
         const built = [];
-        for (const entry of fetched.locations || []) {
-          const locDoc = entry.location;
-          if (!locDoc) continue;
+        for (const loc of locDocs) {
+          const k = coordKey(loc.longitude, loc.latitude);
+          const r = byKey.get(k);
 
-          // eslint-disable-next-line no-await-in-loop
-          const forecast = await forecastService.getWeather(locDoc.longitude, locDoc.latitude);
+          // Skip entries that failed to fetch forecast (keeps Forecast from getting stuck)
+          if (!r?.forecast?.length) continue;
 
           built.push({
-            name: locDoc.name,
-            lon: locDoc.longitude,
-            lat: locDoc.latitude,
-            forecast,
+            name: loc.name,
+            lon: loc.longitude,
+            lat: loc.latitude,
+            forecast: r.forecast,
             source: 'init',
           });
         }
 
+        if (!built.length) {
+          setLocations([]);
+          setError('Could not load forecasts for this list right now.');
+          return;
+        }
+
         setLocations(built);
       } catch (err) {
-        setError(err.message || 'Failed to load list.');
+        setError(err?.message || 'Failed to load list.');
       } finally {
         setLoading(false);
       }
@@ -149,6 +189,7 @@ const ShowList = () => {
         locations={locations}
         reorderable={false}
         limit={20}
+        showListDropdown={false}
       />
 
       <section className={styles.comments}>

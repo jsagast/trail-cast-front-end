@@ -1,51 +1,27 @@
 // src/components/Profile/Profile.jsx
-import { useEffect, useState } from 'react';
+import { useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
-import * as listService from '../../services/listService.js';
+import { ListsContext } from '../../contexts/ListsContext.jsx';
 import styles from './Profile.module.css';
 
 const Profile = () => {
-  const [lists, setLists] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [deletingId, setDeletingId] = useState(null);
+  const { lists, listsLoading, listsError, deleteList } = useContext(ListsContext);
+  const [actionError, setActionError] = useState('');
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const data = await listService.getMyLists();
-        setLists(data);
-      } catch (err) {
-        setError(err.message || 'Failed to load your lists.');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  const handleDelete = async (listId) => {
-    const ok = window.confirm('Delete this list? This cannot be undone.');
+  const handleDelete = async (list) => {
+    setActionError('');
+    const ok = window.confirm(`Delete "${list.name}"? This cannot be undone.`);
     if (!ok) return;
 
     try {
-      setDeletingId(listId);
-      setError('');
-
-      await listService.deleteList(listId);
-
-      // remove it from the UI immediately
-      setLists((prev) => prev.filter((l) => l._id !== listId));
+      await deleteList(list._id);
     } catch (err) {
-      setError(err.message || 'Failed to delete list.');
-    } finally {
-      setDeletingId(null);
+      setActionError(err?.message || 'Failed to delete list.');
     }
   };
 
-  if (loading) return <main className={styles.container}>Loading…</main>;
-  if (error) return <main className={styles.container}>{error}</main>;
+  if (listsLoading) return <main className={styles.container}>Loading…</main>;
+  if (listsError) return <main className={styles.container}>{listsError}</main>;
 
   return (
     <main className={styles.container}>
@@ -53,11 +29,13 @@ const Profile = () => {
 
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
-          <h3>Saved Lists</h3>
+          <h3>My lists</h3>
           <Link className={styles.newBtn} to="/lists/new">
             + New list
           </Link>
         </div>
+
+        {actionError ? <p className={styles.error}>{actionError}</p> : null}
 
         {!lists.length ? (
           <p>You haven’t saved any lists yet.</p>
@@ -65,38 +43,28 @@ const Profile = () => {
           <ul className={styles.list}>
             {lists.map((l) => (
               <li key={l._id} className={styles.listItem}>
-                {/* Left side: view link */}
                 <Link to={`/lists/${l._id}`} className={styles.listLink}>
                   <div className={styles.listTitle}>{l.name}</div>
-                  {l.description ? (
-                    <div className={styles.listDesc}>{l.description}</div>
-                  ) : null}
+                  {l.description ? <div className={styles.listDesc}>{l.description}</div> : null}
                 </Link>
 
-                {/* Right side: actions */}
                 <div className={styles.actions}>
                   <Link className={styles.editBtn} to={`/lists/${l._id}/edit`}>
                     Edit
                   </Link>
-
-                  <button
-                    type="button"
-                    className={styles.deleteBtn}
-                    onClick={() => handleDelete(l._id)}
-                    disabled={deletingId === l._id}
-                    aria-label={`Delete list ${l.name}`}
-                  >
-                    {deletingId === l._id ? '…' : 'Delete'}
+                  <button className={styles.deleteBtn} type="button" onClick={() => handleDelete(l)}>
+                    Delete
                   </button>
                 </div>
               </li>
             ))}
           </ul>
         )}
+
+        <h3>Saved lists</h3>
       </section>
     </main>
   );
 };
 
 export default Profile;
-
