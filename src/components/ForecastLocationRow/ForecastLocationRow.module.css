@@ -1,23 +1,24 @@
 /* src/components/ForecastLocationRow/ForecastLocationRow.module.css */
 
+/* === Left sticky column — elegant & sharp (centered) === */
+
 .locationCell {
   height: 100%;
   width: 100%;
 
   display: flex;
-  flex-direction: column;   /* <- stack */
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;     /* center horizontally */
+  text-align: center;      /* center text */
 
-  gap: 0.4rem;              /* <- spacing between controls */
+  gap: 0.45rem;
 
-  font-weight: 800;
-  padding: 0.75rem;
-  text-align: center;
+  padding: 0.65rem 0.6rem;
 
-  background: #f2f2f2;
-  border-right: 1px solid #ddd;
-  border-bottom: 1px solid #ddd;
+  background: #191919;
+  border-right: 1px solid rgba(255, 255, 255, 0.10);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
   box-sizing: border-box;
 
   position: sticky;
@@ -25,35 +26,155 @@
   z-index: 6;
 }
 
+/* Drag/drop state */
 .dragOver {
-  outline: 2px dashed #666;
-  outline-offset: -6px;
-}
-/* -------------------------------- */
-
-.locationCell select {
-  width: 90px;
-  max-width: 100%;
+  outline: 1px dashed rgba(255, 255, 255, 0.35);
+  outline-offset: -4px;
 }
 
+/* While dragging, let the row be the drop target */
+.dragActive * {
+  pointer-events: none;
+}
+
+/* ...but keep the handle draggable */
+.dragActive .dragHandle {
+  pointer-events: auto;
+}
+
+/* Drag handle — restore "old" size */
+.dragHandle {
+  user-select: none;
+
+  padding: 0.1rem 0.5rem;   
+  font-size: 1.5rem;       
+  line-height: 1;
+
+  border-radius: 8px;
+  background: transparent;
+
+  color: rgba(255, 255, 255, 0.80);
+}
+
+.dragHandle:hover {
+  cursor: grab;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+/* Location name — centered */
+.locationLink {
+  color: rgba(255, 255, 255, 0.95);
+  text-decoration: none;
+
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.25;
+
+  padding: 0.2rem 0;
+
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+
+  
+}
+
+.locationLink:hover {
+  color: var(--hoverColor, rgba(255, 255, 255, 0.95));
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  text-decoration-color: currentColor;
+}
+
+/* Reorder controls — bigger buttons */
 .reorderControls {
   display: flex;
+  justify-content: center;
   gap: 0.35rem;
 }
 
 .reorderControls button {
-  font-weight: 800;
-  padding: 0.25rem 0.45rem;
-  border: 1px solid #ccc;
-  background: white;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 6px;
+
+  color: rgba(255, 255, 255, 0.90);
+  font-weight: 1000;
+
+  /* bigger than before */
+  padding: 0.25rem 0.55rem;
+  line-height: 1;
+
   cursor: pointer;
 }
 
+.reorderControls button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 .reorderControls button:disabled {
-  opacity: 0.45;
+  opacity: 0.35;
   cursor: not-allowed;
 }
+
+/* Dropdown — a bit smaller */
+.listSelect {
+  margin-top: 0.1rem;
+
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+
+  /* smaller than before */
+  padding: 0.18rem 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+
+  cursor: pointer;
+  color-scheme: dark;              
+  background-color: transparent;   
+}
+
+.listSelect:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* The dropdown list items (works well in Chrome/Firefox/Edge) */
+.listSelect option {
+  background-color: #111827;       /* dark slate */
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* When an option is highlighted/selected */
+.listSelect option:checked,
+.listSelect option:hover {
+  background-color: #1f2937;
+}
+
+/* Hidden measurer for dropdown width (used by JS) */
+.selectMeasure {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  visibility: hidden;
+  white-space: pre;
+  font: inherit;
+}
+
+/* === Right-side forecast cells (unchanged) === */
 
 .cell {
   height: 100%;
@@ -110,7 +231,6 @@
   inset: 0;
   pointer-events: none;
 
-  /* soft sun glow in top-right + faint sky haze */
   background:
     radial-gradient(circle at 82% 18%, rgba(255, 214, 102, 0.55) 0 34px, transparent 58px),
     radial-gradient(circle at 18% 22%, rgba(120, 200, 255, 0.18) 0 80px, transparent 160px),
@@ -126,7 +246,6 @@
   overflow: hidden;
 }
 
-/* star layer base */
 .night::before {
   content: "";
   position: absolute;
@@ -236,7 +355,6 @@
   50%      { opacity: 1;    filter: brightness(1.35); }
 }
 
-/* ensure inner text inherits the lighter night color */
 .night .condition,
 .night .temp,
 .night .meta,
@@ -244,12 +362,10 @@
   color: #eaf2ff;
 }
 
-/* slightly soften secondary text */
 .night .meta {
   opacity: 0.92;
 }
 
-/* optional: make the emoji/icons feel less harsh on dark bg */
 .night .icon {
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
 }
@@ -257,13 +373,6 @@
 .empty {
   background: #fafafa;
   color: #999;
-}
-
-.halfTitle {
-  font-size: 0.85rem;
-  font-weight: 800;
-  opacity: 0.8;
-  margin-bottom: 0.25rem;
 }
 
 .icon {
@@ -294,49 +403,3 @@
   .night::before { animation: none; }
 }
 
-.listSelect {
-  box-sizing: border-box;
-  width: auto;     /* JS sets exact px width */
-  max-width: 100%;
-}
-
-.selectMeasure {
-  position: absolute;
-  left: -9999px;
-  top: -9999px;
-  visibility: hidden;
-  white-space: pre;
-  font: inherit;
-}
-
-.dragHandle {
-  user-select: none;
-
-  /* slightly bigger, not huge */
-  padding: 0.1rem 0.5rem;
-  font-size: 1.5rem;
-
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: white;
-  line-height: 1;
-}
-
-/* cursor ONLY when hovering the handle */
-.dragHandle:hover {
-  cursor: grab;
-}
-
-.dragHandle:active {
-  cursor: grabbing;
-}
-
-/* While dragging, let the row be the drop target */
-.dragActive * {
-  pointer-events: none;
-}
-
-/* ...but keep the handle draggable */
-.dragActive .dragHandle {
-  pointer-events: auto;
-}

@@ -26,7 +26,6 @@ const STAR_VARIANTS = [
 
 const DEFAULT_LABEL = 'Add to list?';
 
-// Helps stabilize "same place" comparisons (and prevents float weirdness)
 const normalizeCoord = (n, decimals = 6) => {
   const num = Number(n);
   if (!Number.isFinite(num)) return NaN;
@@ -41,15 +40,14 @@ const ForecastLocationRow = ({
   lists = [],
   listsLoading = false,
   listsError = '',
+  titleColor,
 }) => {
   const navigate = useNavigate();
 
-  // dropdown state
   const [listChoice, setListChoice] = useState('');
   const [selectLabel, setSelectLabel] = useState(DEFAULT_LABEL);
   const [savingToList, setSavingToList] = useState(false);
 
-  // drag/drop state
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
@@ -59,14 +57,12 @@ const ForecastLocationRow = ({
   const measureRef = useRef(null);
   const dragDepth = useRef(0);
 
-
   const displayLabel =
     savingToList ? 'Adding…'
     : listsLoading ? 'Loading lists…'
     : listsError ? 'Lists unavailable'
     : selectLabel;
 
-  // map forecast periods to { [dateKey]: { day, night } }
   const byDate = useMemo(() => {
     const map = {};
     for (const p of weatherData.forecast || []) {
@@ -85,8 +81,6 @@ const ForecastLocationRow = ({
 
   const handleListChange = async (e) => {
     const value = e.target.value;
-
-    // always snap back to placeholder after a choice
     setListChoice('');
 
     if (value === 'new') {
@@ -106,28 +100,14 @@ const ForecastLocationRow = ({
         description: '',
       });
 
-      setSelectLabel('✅ Added');
+      setSelectLabel('Added!');
     } catch (err) {
-      const rawMsg = String(err?.message || '');
-      const normalized = rawMsg.toLowerCase();
-
-      // Custom duplicate messaging (both duplicate-by-list and duplicate-by-coordinates)
-      const isDuplicate =
-        normalized.includes('already in this list') ||
-        (normalized.includes('coordinates') && normalized.includes('already')) ||
-        (normalized.includes('already') && normalized.includes('list'));
-
-      if (isDuplicate) {
-        setSelectLabel('❌ Already in list');
-      } else {
-        setSelectLabel('❌ Could not add');
-      }
+      setSelectLabel('Failed to add');
     } finally {
       setSavingToList(false);
     }
   };
 
-  // ---- Drag and drop handlers ----
   const handleDragStart = (e) => {
     if (!canDrag) return;
     setDragActive(true);
@@ -179,37 +159,35 @@ const ForecastLocationRow = ({
 
     reorder.onMove(from, to);
   };
-  // -------------------------------
 
-  const renderHalf = (period, isNight) => {
-    if (!period) return <div className={`${styles.half} ${styles.empty}`}>—</div>;
+  const renderHalf = (p, isNight) => {
+    if (!p) {
+      return <div className={`${styles.half} ${styles.empty}`}>—</div>;
+    }
 
-    const nightStarsClass = isNight
-      ? STAR_VARIANTS[variantIndexFromKey(period.startTime, STAR_VARIANTS.length)]
-      : '';
+    const base = isNight ? styles.night : styles.day;
+    const starsClass = isNight ? STAR_VARIANTS[variantIndexFromKey(p.startTime, STAR_VARIANTS.length)] : '';
 
     return (
-      <div className={[styles.half, isNight ? styles.night : styles.day, nightStarsClass].join(' ')}>
-        <img src={period.icon} alt={period.shortForecast} className={styles.icon} />
-        <div className={styles.condition}>{period.shortForecast}</div>
+      <div className={`${styles.half} ${base} ${starsClass}`}>
+        {p.icon && <img className={styles.icon} src={p.icon} alt={p.shortForecast || 'forecast icon'} />}
+        <div className={styles.condition}>{p.shortForecast}</div>
         <div className={styles.temp}>
-          {period.temperature}°{period.temperatureUnit}
+          {p.temperature}°{p.temperatureUnit}
         </div>
         <div className={styles.meta}>
-          <div>💧 {period.probabilityOfPrecipitation?.value ?? 0}%</div>
-          <div>༄ {period.windSpeed}</div>
+          <span>{p.windSpeed}</span>
+          <span>{p.windDirection}</span>
         </div>
       </div>
     );
   };
 
-  // shrink-wrap select width to current label text
   useLayoutEffect(() => {
     if (!selectRef.current || !measureRef.current) return;
 
-    const ARROW_PAD_PX = 44; // native arrow + padding
-    const textW = measureRef.current.offsetWidth;
-
+    const ARROW_PAD_PX = 44;
+    const textW = measureRef.current.getBoundingClientRect().width;
     selectRef.current.style.width = `${textW + ARROW_PAD_PX}px`;
   }, [displayLabel]);
 
@@ -242,6 +220,7 @@ const ForecastLocationRow = ({
 
         <Link
           className={styles.locationLink}
+          style={titleColor ? { '--hoverColor': titleColor } : undefined}
           to={`/location?name=${encodeURIComponent(weatherData.name)}&lon=${weatherData.lon}&lat=${weatherData.lat}`}
           state={{ weatherData }}
         >
@@ -260,7 +239,7 @@ const ForecastLocationRow = ({
               disabled={reorder.index === 0}
               aria-label="Move up"
             >
-              ↑
+              ▲
             </button>
 
             <button
@@ -273,7 +252,7 @@ const ForecastLocationRow = ({
               disabled={reorder.index === reorder.total - 1}
               aria-label="Move down"
             >
-              ↓
+              ▼
             </button>
 
             <button
@@ -315,10 +294,9 @@ const ForecastLocationRow = ({
                 </option>
               ))}
 
-              <option value="new">+ New list…</option>
+              <option value="new">+ Create new list</option>
             </select>
 
-            {/* Hidden measurer for width */}
             <span ref={measureRef} className={styles.selectMeasure} aria-hidden="true">
               {displayLabel}
             </span>

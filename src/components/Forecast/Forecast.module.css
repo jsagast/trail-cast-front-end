@@ -1,15 +1,21 @@
+/* src/components/Forecast/Forecast.module.css */
+
+.main {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
 .table {
-  /* controls */
+  /* controls (UNCHANGED from your original) */
   --left-col-w: 180px;  /* left sticky column width */
   --day-col-w: 240px;   /* each day column width */
 
-  --header-h: 64px;     /* header row height */
-  --cell-h: 180px;      /* each location row height */
+  --header-h: 50px;     /* header row height */
+  --cell-h: 150px;      /* each location row height */
 
   display: grid;
-  border: 1px solid #ddd;
 
-  /* Show a 5-day window by default, but allow shrinking on small screens */
+  /* keep the 5-day window sizing EXACTLY the same */
   width: 100%;
   max-width: calc(var(--left-col-w) + (var(--day-col-w) * 5));
   min-width: 0;
@@ -18,15 +24,16 @@
   overflow-y: hidden;
   box-sizing: border-box;
 
-  /* nice feel; JS uses scrollTo smooth as well */
   scroll-behavior: smooth;
 
-  /* hide scrollbar but keep scroll working */
   scrollbar-width: none;
 
-  /* predictable stacking context */
   position: relative;
   isolation: isolate;
+
+  /* NEW: clean dark background + subtle border/shadow (does not affect sizing) */
+  background: #1f2937; /* dark gray */
+  border: 1px solid rgba(255, 255, 255, 0.10);
 }
 
 .table::-webkit-scrollbar {
@@ -45,9 +52,11 @@
   padding: 0.75rem;
   text-align: center;
 
-  background: #f2f2f2;
-  border-right: 1px solid #ddd;
-  border-bottom: 1px solid #ddd;
+  background: #191919;
+  color: rgba(255, 255, 255, 0.92);
+
+  border-right: 1px solid rgba(255, 255, 255, 0.10);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
   box-sizing: border-box;
 
   position: sticky;
@@ -65,16 +74,36 @@
 
 .dayNav {
   display: flex;
-  gap: 0.4rem;
+  align-items: center;  /* vertical centering */
+  justify-content: center;
+  gap: 1rem;         /* more spacing between buttons */
 }
 
+
 .dayNav button {
-  font-weight: 800;
-  padding: 0.2rem 0.45rem;
-  border: 1px solid #ccc;
-  background: white;
+  display: inline-flex; /* centers the arrow inside the button */
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 6px;
+
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 16px;
+  font-weight: 1000;
+  letter-spacing: 0.02em;
+
+  /* slightly larger than reorder buttons */
+  padding: 0.35rem 0.75rem;
+  line-height: 1;
+
   cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, transform 120ms ease;
+}
+
+.dayNav button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .dayNav button:disabled {
@@ -90,13 +119,17 @@
   align-items: center;
   justify-content: center;
 
-  font-weight: 800;
+  font-weight: 600;
+  font-size: 20px;
   padding: 0.75rem;
   text-align: center;
 
-  background: #f2f2f2;
-  border-bottom: 1px solid #ddd;
-  border-right: 1px solid #ddd;
+  /* NEW: match header styling */
+  background: #191919;
+  color: rgba(255, 255, 255, 0.92);
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  border-right: 1px solid rgba(255, 255, 255, 0.10);
   box-sizing: border-box;
 
   position: sticky;

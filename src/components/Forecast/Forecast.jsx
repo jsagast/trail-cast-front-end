@@ -5,6 +5,49 @@ import { ListsContext } from '../../contexts/ListsContext.jsx';
 
 const MAX_WINDOW_DAYS = 5;
 
+// --- Trail Cast brand gradient helpers (from NavBar.module.css) ---
+const lerp = (a, b, t) => a + (b - a) * t;
+
+const hexToRgb = (hex) => {
+  const h = hex.replace('#', '').trim();
+  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+  const n = parseInt(full, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+};
+
+const rgbToHex = ({ r, g, b }) =>
+  `#${[r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+
+const lerpHex = (aHex, bHex, t) => {
+  const a = hexToRgb(aHex);
+  const b = hexToRgb(bHex);
+  return rgbToHex({
+    r: lerp(a.r, b.r, t),
+    g: lerp(a.g, b.g, t),
+    b: lerp(a.b, b.b, t),
+  });
+};
+
+// Exact Trail→Cast spectrum from NavBar.module.css:
+// Trail: #fb5f04 → #f0ce1a
+// Cast:  #5fd6e3 → #1692df
+const TRAIL_CAST_STOPS = ['#fb5f04', '#f0ce1a', '#5fd6e3', '#1692df'];
+
+const sampleGradient = (stops, t) => {
+  if (!stops?.length) return '#ffffff';
+  if (stops.length === 1) return stops[0];
+
+  const clamped = Math.max(0, Math.min(1, t));
+  const n = stops.length - 1;
+  const scaled = clamped * n;
+  const i = Math.floor(scaled);
+  const localT = scaled - i;
+
+  const a = stops[i];
+  const b = stops[Math.min(i + 1, n)];
+  return lerpHex(a, b, localT);
+};
+
 const readCssPx = (el, varName, fallback) => {
   const v = getComputedStyle(el).getPropertyValue(varName).trim();
   const n = parseFloat(v.replace('px', ''));
@@ -16,10 +59,11 @@ const dateKeyFromStartTime = (startTime) => startTime?.slice(0, 10); // "YYYY-MM
 const weekdayLabel = (dateKey) => {
   // Use midday to avoid timezone edge weirdness
   const d = new Date(`${dateKey}T12:00:00`);
-  return d.toLocaleDateString(undefined, { weekday: 'short' });
+  return d.toLocaleDateString(undefined, { weekday: 'long' });
 };
 
 const buildDayColumns = (forecast) => {
+  // returns [{ dateKey, label }]
   const order = [];
   const seen = new Set();
 
@@ -30,7 +74,7 @@ const buildDayColumns = (forecast) => {
     order.push(dk);
   }
 
-  // Keep up to 7 days available from NWS, but we will DISPLAY a window.
+  // Keep up to 7 days available, but we display a window.
   return order.slice(0, 7).map((dk) => ({ dateKey: dk, label: weekdayLabel(dk) }));
 };
 
@@ -69,28 +113,21 @@ const Forecast = ({
   const locations = controlledLocations ?? internalLocations;
   const setLocations = setControlledLocations ?? setInternalLocations;
 
-  // 7-day columns (available)
   const dayColumns = useMemo(() => {
     if (!locations.length) return [];
     return buildDayColumns(locations[0]?.forecast);
   }, [locations]);
 
-  // window offset (0..maxOffset)
   const [dayOffset, setDayOffset] = useState(0);
-
-  // how many day columns are visible right now (<= 5)
   const [visibleDays, setVisibleDays] = useState(MAX_WINDOW_DAYS);
 
   const windowDays = Math.max(1, Math.min(visibleDays, dayColumns.length));
   const maxOffset = Math.max(0, dayColumns.length - windowDays);
 
-  // signature to detect column-set changes (new location / new forecast)
   const daySig = useMemo(() => dayColumns.map((c) => c.dateKey).join('|'), [dayColumns]);
 
-  // scroll container ref (we animate by scrollTo)
   const tableRef = useRef(null);
 
-  // Recompute visible day columns when the table resizes (window changes)
   useEffect(() => {
     const el = tableRef.current;
     if (!el) return;
@@ -121,19 +158,16 @@ const Forecast = ({
     };
   }, [dayColumns.length]);
 
-  // Reset window when the underlying days change (and start at the beginning)
   useEffect(() => {
     setDayOffset(0);
     const el = tableRef.current;
     if (el) el.scrollTo({ left: 0, behavior: 'auto' });
   }, [daySig]);
 
-  // Clamp offset if the window gets smaller/larger
   useEffect(() => {
     setDayOffset((v) => Math.min(v, maxOffset));
   }, [maxOffset]);
 
-  // Animate the slide: arrow clicks drive dayOffset; we scroll smoothly to that offset
   useEffect(() => {
     const el = tableRef.current;
     if (!el) return;
@@ -146,7 +180,6 @@ const Forecast = ({
     el.scrollTo({ left: clamped * dayPx, behavior: 'smooth' });
   }, [dayOffset, maxOffset]);
 
-  // Uncontrolled mode: merge incoming weatherData into the list
   useEffect(() => {
     if (!weatherData?.name) return;
 
@@ -155,7 +188,6 @@ const Forecast = ({
     setLocations((prev) => {
       const withoutThis = prev.filter((l) => locationKey(l) !== incomingKey);
 
-      // keep initial location at top if requested (only for init loads)
       if (mode === 'newestTop' && initialTopName && weatherData.source === 'init') {
         if (weatherData.name === initialTopName) return [weatherData, ...withoutThis].slice(0, limit);
         if (withoutThis[0]?.name === initialTopName) {
@@ -163,7 +195,6 @@ const Forecast = ({
         }
       }
 
-      // legacy "pinFirst" mode
       if (mode === 'pinFirst' && withoutThis.length) {
         const pinned = withoutThis[0];
         if (weatherData.name === pinned.name) return [weatherData, ...withoutThis.slice(1)].slice(0, limit);
@@ -199,36 +230,41 @@ const Forecast = ({
   const nextDisabled = dayOffset === maxOffset;
 
   const renderRows = ({ lists = [], listsLoading = false, listsError = '' } = {}) =>
-    locations.map((loc, idx) => (
-      <ForecastLocationRow
-        key={locationKey(loc) || loc.name}
-        weatherData={loc}
-        dayColumns={dayColumns}
-        reorder={
-          reorderable
-            ? {
-                enabled: true,
-                index: idx,
-                total: locations.length,
-                onMove: moveLocation,
-                onRemove: removeLocation,
-              }
-            : null
-        }
-        showListDropdown={showListDropdown}
-        lists={lists}
-        listsLoading={listsLoading}
-        listsError={listsError}
-      />
-    ));
+    locations.map((loc, idx) => {
+      // collective row spectrum (top row → bottom row)
+      const tRow = locations.length <= 1 ? 0 : idx / (locations.length - 1);
+      const titleColor = sampleGradient(TRAIL_CAST_STOPS, tRow);
+
+      return (
+        <ForecastLocationRow
+          key={locationKey(loc) || loc.name}
+          weatherData={loc}
+          dayColumns={dayColumns}
+          titleColor={titleColor}
+          reorder={
+            reorderable
+              ? {
+                  enabled: true,
+                  index: idx,
+                  total: locations.length,
+                  onMove: moveLocation,
+                  onRemove: removeLocation,
+                }
+              : null
+          }
+          showListDropdown={showListDropdown}
+          lists={lists}
+          listsLoading={listsLoading}
+          listsError={listsError}
+        />
+      );
+    });
 
   return (
-    <main className={styles.wrap}>
+    <main className={styles.main}>
       <div ref={tableRef} className={styles.table} style={gridStyle}>
         <div className={styles.corner}>
           <div className={styles.cornerInner}>
-            <div className={styles.cornerTitle}>Weather</div>
-
             <div className={styles.dayNav}>
               <button
                 type="button"
@@ -236,7 +272,7 @@ const Forecast = ({
                 disabled={prevDisabled}
                 aria-label="Previous day"
               >
-                ←
+                ◀
               </button>
 
               <button
@@ -245,17 +281,23 @@ const Forecast = ({
                 disabled={nextDisabled}
                 aria-label="Next day"
               >
-                →
+                ▶
               </button>
             </div>
           </div>
         </div>
 
-        {dayColumns.map((c) => (
-          <div key={c.dateKey} className={styles.dayHeader}>
-            {c.label}
-          </div>
-        ))}
+        {dayColumns.map((c, i) => {
+          // collective day spectrum across all available days
+          const t = dayColumns.length <= 1 ? 0 : i / (dayColumns.length - 1);
+          const color = sampleGradient(TRAIL_CAST_STOPS, t);
+
+          return (
+            <div key={c.dateKey} className={styles.dayHeader} style={{ color }}>
+              {c.label}
+            </div>
+          );
+        })}
 
         {showListDropdown ? (
           <ListsBridge>{(lp) => <>{renderRows(lp)}</>}</ListsBridge>
