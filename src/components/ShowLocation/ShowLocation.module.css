@@ -1,0 +1,116 @@
+.container {
+    padding-top: 100px
+}
+
+.comments {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.comments h3 {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: #222;
+  border-bottom: 2px solid #e2e2e2;
+  padding-bottom: 0.3rem;
+}
+
+/* Individual activity/comment article */
+.comment {
+  background-color: #fff;
+  padding: 1rem 1.2rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  border: 1px solid #e0e0e0;
+}
+
+/* Header for author/date */
+.comment header p {
+  font-size: 0.875rem;
+  color: #555;
+  margin-bottom: 0.5rem;
+}
+
+/* Activity details inside article */
+.comment .activity p {
+  margin: 0.3rem 0;
+  font-size: 1rem;
+}
+
+/* Buttons container */
+.commentActions {
+  margin-top: 0.8rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.commentActions button {
+  padding: 0.35rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.commentActions button:first-child {
+  background-color: #4f46e5;
+  color: #fff;
+}
+
+.commentActions button:last-child {
+  background-color: #ef4444;
+  color: #fff;
+}
+
+.commentActions button:hover {
+  opacity: 0.9;
+  transform: translateY(-5px);
+}
+
+/* ActivityForm styling */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+form label {
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+form input[type="date"],form textarea {
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+form button {
+  align-self: flex-start;
+  background-color: #10b981; /* green */
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+form button:hover {
+  background-color: #059669;
+  transform: translateY(-1px);
+}
+
+.comments p {
+  font-style: italic;
+  color: #777;
+  padding: 0.5rem 0;
+}

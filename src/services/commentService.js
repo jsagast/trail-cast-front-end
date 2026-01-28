@@ -1,8 +1,8 @@
-const BASE_PATH = '/locations';
+const BASE_PATH = '/lists';
 
-const createComment = async (locationId, commentFormData) => {
+const createComment = async (listId, commentFormData) => {
   try {
-    const res = await fetch(`${BASE_PATH}/${locationId}/comments`, {
+    const res = await fetch(`${BASE_URL}/${listId}/comments`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -16,15 +16,15 @@ const createComment = async (locationId, commentFormData) => {
   }
 };
 
-const updateComment = async (locationId, commentId, commentFormData)=> {
+const updateComment = async (listId, commentId, text)=> {
   try {
-    const res = await fetch(`${BASE_PATH}/${locationId}/comments/${commentId}`, {
+    const res = await fetch(`${BASE_URL}/${listId}/comments/${commentId}`, {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(commentFormData),
+      body: JSON.stringify({text}),
     });
     return res.json();
   } catch (error) {
@@ -32,9 +32,9 @@ const updateComment = async (locationId, commentId, commentFormData)=> {
   }
 }
 
-const deleteComment = async (locationId, commentId) => {
+const deleteComment = async (listId, commentId) => {
   try {
-    const res = await fetch(`${BASE_PATH}/${locationId}/comments/${commentId}`, {
+    const res = await fetch(`${BASE_URL}/${listId}/comments/${commentId}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`,
