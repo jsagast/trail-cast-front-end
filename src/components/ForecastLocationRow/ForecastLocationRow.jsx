@@ -6,24 +6,6 @@ import * as listService from '../../services/listService.js';
 
 const dateKeyFromStartTime = (startTime) => startTime?.slice(0, 10);
 
-const variantIndexFromKey = (key, mod = 3) => {
-  if (!key) return 0;
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) {
-    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
-  }
-  return hash % mod;
-};
-
-const STAR_VARIANTS = [
-  styles.starsA,
-  styles.starsB,
-  styles.starsC,
-  styles.starsD,
-  styles.starsE,
-  styles.starsF,
-];
-
 const DEFAULT_LABEL = 'Add to list?';
 
 const normalizeCoord = (n, decimals = 6) => {
@@ -217,12 +199,11 @@ const ForecastLocationRow = ({
     }
 
     const base = isNight ? styles.night : styles.day;
-    const starsClass = isNight ? STAR_VARIANTS[variantIndexFromKey(p.startTime, STAR_VARIANTS.length)] : '';
 
     return (
-      <div className={`${styles.half} ${base} ${starsClass}`}>
+      <div className={`${styles.half} ${base}`}>
         {p.icon && <img className={styles.icon} src={p.icon} alt={p.shortForecast || 'forecast icon'} />}
-        <div className={styles.condition}>{p.shortForecast}</div>
+        
         <div className={styles.temp}>
           {p.temperature}°{p.temperatureUnit}
         </div>

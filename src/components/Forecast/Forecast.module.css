@@ -1,10 +1,5 @@
 /* src/components/Forecast/Forecast.module.css */
 
-.main {
-  padding-left: 16px;
-  padding-right: 16px;
-}
-
 .table {
   /* controls (UNCHANGED from your original) */
   --left-col-w: 180px;  /* left sticky column width */
@@ -25,7 +20,6 @@
   box-sizing: border-box;
 
   scroll-behavior: smooth;
-
   scrollbar-width: none;
 
   position: relative;
@@ -33,7 +27,8 @@
 
   /* NEW: clean dark background + subtle border/shadow (does not affect sizing) */
   background: #1f2937; /* dark gray */
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: none;
+  box-shadow: 0 0 10px 10px rgba(255, 255, 255, 0.10);
 }
 
 .table::-webkit-scrollbar {

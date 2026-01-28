@@ -9,6 +9,7 @@
 body {
   margin: 0;
   font-family: inherit;
+  background-color: #000000;;
 }
 
 /* 4) (Optional but recommended) form controls don’t always inherit on all browsers */

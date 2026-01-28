@@ -1,10 +1,8 @@
 import { useCallback, useEffect } from 'react';
 import Forecast from '../Forecast/Forecast.jsx';
-import LocationSearch from '../LocationSearch/LocationSearch.jsx';
 import { useWeatherList } from '../../hooks/useWeatherList.js';
-import ListSearch from '../ListSearch/ListSearch.jsx';
+import Sidebar from '../Sidebar/Sidebar.jsx';
 import styles from './Landing.module.css';
-
 
 // Seed locations with precomputed coords so Landing doesn't need Geoapify on load.
 const SEED_LOCATIONS = [
@@ -93,18 +91,17 @@ const Landing = () => {
 
   return (
     <main className={styles.container}>
-      <Forecast
-        // controlled mode: Landing drives the list directly (no initialTopName pinning)
-        locations={locations}
-        setLocations={setLocations}
-        mode="newestTop"
-        reorderable={true}
-        limit={5}
-      />
+      <section className={styles.gridArea}>
+        <Forecast
+          locations={locations}
+          setLocations={setLocations}
+          mode="newestTop"
+          reorderable={true}
+          limit={5}
+        />
+      </section>
 
-      <LocationSearch getWeather={getWeather} autoLoad={false} />
-
-      <ListSearch />
+      <Sidebar getWeather={getWeather} />
     </main>
   );
 };
