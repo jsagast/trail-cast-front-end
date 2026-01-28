@@ -2,27 +2,8 @@ import { useCallback, useEffect } from 'react';
 import Forecast from '../Forecast/Forecast.jsx';
 import { useWeatherList } from '../../hooks/useWeatherList.js';
 import Sidebar from '../Sidebar/Sidebar.jsx';
+import { SEED_LOCATIONS } from '../../constants/seedLocations.js';
 import styles from './Landing.module.css';
-
-// Seed locations with precomputed coords so Landing doesn't need Geoapify on load.
-const SEED_LOCATIONS = [
-  { name: 'New York, NY', latitude: 40.7128, longitude: -74.0060 },
-  { name: 'Los Angeles, CA', latitude: 34.0522, longitude: -118.2437 },
-  { name: 'Chicago, IL', latitude: 41.8781, longitude: -87.6298 },
-  { name: 'Dallas, TX', latitude: 32.7767, longitude: -96.7970 },
-  { name: 'Houston, TX', latitude: 29.7604, longitude: -95.3698 },
-  { name: 'Washington, DC', latitude: 38.9072, longitude: -77.0369 },
-  { name: 'Philadelphia, PA', latitude: 39.9526, longitude: -75.1652 },
-  { name: 'Miami, FL', latitude: 25.7617, longitude: -80.1918 },
-  { name: 'Atlanta, GA', latitude: 33.7490, longitude: -84.3880 },
-  { name: 'Phoenix, AZ', latitude: 33.4484, longitude: -112.0740 },
-  { name: 'Boston, MA', latitude: 42.3601, longitude: -71.0589 },
-  { name: 'San Francisco, CA', latitude: 37.7749, longitude: -122.4194 },
-  { name: 'Seattle, WA', latitude: 47.6062, longitude: -122.3321 },
-  { name: 'Denver, CO', latitude: 39.7392, longitude: -104.9903 },
-  { name: 'Portland, OR', latitude: 45.5152, longitude: -122.6784 },
-  { name: 'Sacramento, CA', latitude: 38.5816, longitude: -121.4944 },
-];
 
 const pickRandomUnique = (arr, n) => {
   const copy = [...arr];

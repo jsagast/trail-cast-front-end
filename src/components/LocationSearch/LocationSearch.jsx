@@ -1,39 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as forecastService from '../../services/forecastService.js';
+import { SEED_LOCATIONS } from '../../constants/seedLocations.js';
 import styles from './LocationSearch.module.css';
-
-const cities = [
-  "New York, NY",
-  "Los Angeles, CA",
-  "Chicago, IL",
-  "Dallas, TX",
-  "Houston, TX",
-  "Washington, DC",
-  "Philadelphia, PA",
-  "Miami, FL",
-  "Atlanta, GA",
-  "Phoenix, AZ",
-  "Boston, MA",
-  "San Francisco, CA",
-  "Detroit, MI",
-  "Seattle, WA",
-  "Minneapolis, MN",
-  "Tampa, FL",
-  "San Diego, CA",
-  "Denver, CO",
-  "Baltimore, MD",
-  "St. Louis, MO",
-  "Orlando, FL",
-  "Charlotte, NC",
-  "San Antonio, TX",
-  "Portland, OR",
-  "Sacramento, CA",
-  "Pittsburgh, PA",
-  "Austin, TX",
-  "Las Vegas, NV",
-  "Cincinnati, OH",
-  "Salt Lake City, UT",
-];
 
 const LocationSearch = ({ getWeather, autoLoad = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,17 +54,13 @@ const LocationSearch = ({ getWeather, autoLoad = false }) => {
     const interval = setInterval(() => {
       setFade(false);
       setTimeout(() => {
-        setCityIndex(Math.floor(Math.random() * cities.length));
+        setCityIndex(Math.floor(Math.random() * SEED_LOCATIONS.length));
         setFade(true);
       }, 350);
     }, 2100);
 
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    if (!autoLoad) return;
-  }, [autoLoad]);
 
   return (
     <div className={styles.searchContainer}>
@@ -109,7 +73,7 @@ const LocationSearch = ({ getWeather, autoLoad = false }) => {
           id="search"
           type="text"
           autoComplete="off"
-          placeholder={`${cities[cityIndex]}`}
+          placeholder={`${SEED_LOCATIONS[cityIndex]?.name ?? ''}`}
           className={`${styles.searchInput} ${fade ? styles.fadeIn : styles.fadeOut}`}
           value={searchTerm}
           onChange={handleInputChange}
