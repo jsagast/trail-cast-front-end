@@ -37,7 +37,7 @@ const getWeatherBatch = async (locations) => {
     body: JSON.stringify(payload),
   });
   const data = await assertOkJson(res);
-  return data.results ?? data; // ✅ normalize return shape
+  return data.results ?? data; 
 }
 
 // Back-compat helper (some code calls this)
@@ -54,7 +54,7 @@ const getWeatherData = async (location) => {
     lon: longitude,
     lat: latitude,
   };
-};
+}
 
 const createLocation = async (locationData) => {
   try {
@@ -94,5 +94,7 @@ export {
   searchLocations,
   getWeather,
   getWeatherBatch,
-  getWeatherData
+  getWeatherData,
+  createLocation,
+  getLocationByCoords,
 };

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { signUp } from '../../services/authService';
 import { UserContext } from '../../contexts/UserContext';
 
+import styles from './SignUpForm.module.css';
+
 const SignUpForm = () => {
   const navigate = useNavigate();
   const { setUser } = useContext(UserContext);
@@ -37,58 +39,85 @@ const SignUpForm = () => {
   };
 
   return (
-    <main >
-      <section>
-        <form onSubmit={handleSubmit}>
-          <h1>Sign Up</h1>
-          <p>{message}</p>
-          <div>
-            <label htmlFor='username'>Username:</label>
+    <main className={styles.container}>
+      <section className={styles.card}>
+        <form className={styles.form} onSubmit={handleSubmit}>
+          <header className={styles.header}>
+            <h1 className={styles.title}>Sign Up</h1>
+            {message ? <p className={styles.message}>{message}</p> : null}
+          </header>
+
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="username">
+              Username:
+            </label>
             <input
-              type='text'
-              id='name'
+              className={styles.input}
+              type="text"
+              id="username"
               value={username}
-              name='username'
+              name="username"
               onChange={handleChange}
               required
             />
           </div>
-          <div>
-            <label htmlFor='email'>Email:</label>
+
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="email">
+              Email:
+            </label>
             <input
-              type='email'
-              id='email'
+              className={styles.input}
+              type="email"
+              id="email"
               value={email}
-              name='email'
+              name="email"
               onChange={handleChange}
               required
             />
           </div>
-          <div>
-            <label htmlFor='password'>Password:</label>
+
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="password">
+              Password:
+            </label>
             <input
-              type='password'
-              id='password'
+              className={styles.input}
+              type="password"
+              id="password"
               value={password}
-              name='password'
+              name="password"
               onChange={handleChange}
               required
             />
           </div>
-          <div>
-            <label htmlFor='confirm'>Confirm Password:</label>
+
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="confirm">
+              Confirm Password:
+            </label>
             <input
-              type='password'
-              id='confirm'
+              className={styles.input}
+              type="password"
+              id="confirm"
               value={passwordConf}
-              name='passwordConf'
+              name="passwordConf"
               onChange={handleChange}
               required
             />
           </div>
-          <div>
-            <button disabled={isFormInvalid()}>Sign Up</button>
-            <button onClick={() => navigate('/')}>Cancel</button>
+
+          <div className={styles.actions}>
+            <button className={styles.primaryBtn} disabled={isFormInvalid()}>
+              Sign Up
+            </button>
+            <button
+              className={styles.secondaryBtn}
+              type="button"
+              onClick={() => navigate('/')}
+            >
+              Cancel
+            </button>
           </div>
         </form>
       </section>
