@@ -1,4 +1,4 @@
-const BASE_URL = `${import.meta.env.VITE_BACK_END_SERVER_URL}/locations/`;
+const BASE_URL = `${import.meta.env.VITE_BACK_END_SERVER_URL}/locations`;
 
 const assertOkJson = async (res) => {
   if (!res.ok) {
@@ -16,7 +16,7 @@ const searchLocations = async (query) => {
 
 const getWeather = async (longitude, latitude) => {
   const res = await fetch(
-    `${BASE_URL}weather?lon=${encodeURIComponent(longitude)}&lat=${encodeURIComponent(latitude)}`
+    `${BASE_URL}/weather?lon=${encodeURIComponent(longitude)}&lat=${encodeURIComponent(latitude)}`
   );
   const data = await assertOkJson(res);
   return data.location.forecast;
@@ -31,7 +31,7 @@ const getWeatherBatch = async (locations) => {
     })),
   };
 
-  const res = await fetch(`${BASE_URL}weather/batch`, {
+  const res = await fetch(`${BASE_URL}/weather/batch`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -81,7 +81,7 @@ const createLocation = async (locationData) => {
 
 const getLocationByCoords = async (lat, lon) => {
   try {
-    const res = await fetch(`${BASE_URL}by-coords?lat=${lat}&lon=${lon}`)
+    const res = await fetch(`${BASE_URL}/by-coords?lat=${lat}&lon=${lon}`)
     const location = await res.json();
     return location
   } catch (err) {

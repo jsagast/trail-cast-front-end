@@ -27,6 +27,7 @@ const ShowLocation = () => {
   const [editingActivity, setEditingActivity] = useState(null);
   const [error, setError] = useState('');
 
+
   const formatActivities = (activities = []) =>
     activities.map(activity => ({
       _id: activity._id,
@@ -59,7 +60,7 @@ const ShowLocation = () => {
     );
   }, [passed, lon, lat, name, getWeather]);
 
-
+console.log(weatherData);
 useEffect(() => {
   const fetchSavedLocation = async () => {
     if (!weatherData) return;
@@ -69,6 +70,8 @@ useEffect(() => {
         weatherData.lat,
         weatherData.lon
       );
+
+      console.log(location);
 
       if (location) {
         setSavedLocation(location);
@@ -96,9 +99,9 @@ useEffect(() => {
           latitude: weatherData.lat,
           longitude: weatherData.lon
         });
-
         setSavedLocation(location);
       }
+      console.log(savedLocation)
       console.log(savedLocation._id);
 
       const newActivity = await activityService.createActivity(
