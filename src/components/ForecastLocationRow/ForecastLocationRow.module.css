@@ -232,7 +232,7 @@
   position: relative;
   overflow: hidden;
 
-  background: linear-gradient(180deg, #f6fbff 0%, #ffffff 55%, #f2f7ff 100%);
+  background: #1e83d6;
   color: #0b1220;
 }
 
@@ -250,7 +250,7 @@
 }
 
 .night {
-  background: linear-gradient(180deg, #0b1220 0%, #101b33 55%, #14264a 100%);
+  background: #000000;
   color: #eaf2ff;
   position: relative;
   overflow: hidden;
@@ -271,7 +271,6 @@
 
   opacity: 1;
 
-  animation: twinkle 3.8s ease-in-out infinite;
   will-change: opacity, filter;
 }
 
@@ -279,11 +278,6 @@
 .night > * {
   position: relative;
   z-index: 1;
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.75; filter: brightness(1); }
-  50%      { opacity: 1;    filter: brightness(1.35); }
 }
 
 .night .condition,
@@ -307,9 +301,8 @@
 }
 
 .icon {
-  width: 75px;
-  height: 75px;
-  margin-bottom: 0.25rem;
+  width: 120px;
+  height: 120px;
 }
 
 .condition {

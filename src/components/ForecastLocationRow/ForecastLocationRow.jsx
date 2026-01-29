@@ -1,4 +1,3 @@
-// src/components/ForecastLocationRow/ForecastLocationRow.jsx
 import { Link, useNavigate } from 'react-router-dom';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import styles from './ForecastLocationRow.module.css';
@@ -32,9 +31,7 @@ const ForecastLocationRow = ({
 
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-
   const canDrag = !!reorder?.enabled;
-
   const selectRef = useRef(null);
   const measureRef = useRef(null);
   const dragDepth = useRef(0);
