@@ -46,7 +46,7 @@ const CommentForm = (props) => {
 
   return (
     <form onSubmit={handleSubmit}>
-      <label htmlFor='text-input'>Your Review:</label>
+      <label htmlFor='text-input'>Make a comment:</label>
       <textarea
         required
         type='text'

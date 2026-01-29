@@ -10,7 +10,7 @@ const assertOkJson = async (res) => {
 
 const searchLocations = async (query) => {
   const q = encodeURIComponent((query ?? '').toString());
-  const res = await fetch(`${BASE_URL}places?search=${q}`);
+  const res = await fetch(`${BASE_URL}/places?search=${q}`);
   return assertOkJson(res);
 };
 

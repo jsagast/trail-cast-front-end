@@ -1,5 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { ListsContext } from '../../contexts/ListsContext.jsx';
 import Forecast from '../Forecast/Forecast.jsx';
 import CommentForm from '../CommentForm/CommentForm.jsx';
 import * as listService from '../../services/listService.js';
@@ -7,7 +8,6 @@ import * as forecastService from '../../services/forecastService.js';
 import * as commentService from '../../services/commentService.js';
 
 import { UserContext } from '../../contexts/UserContext';
-
 import styles from './ShowList.module.css';
 
 const coordKey = (lon, lat) => {
@@ -20,6 +20,7 @@ const ShowList = () => {
   const { user } = useContext(UserContext);
   const { listId } = useParams();
   const { state } = useLocation();
+  const navigate = useNavigate();
 
   const [list, setList] = useState(state?.list ?? null);
   const [locations, setLocations] = useState(state?.locations ?? []);
@@ -28,6 +29,17 @@ const ShowList = () => {
 
   const [comments, setComments] = useState(state?.list?.comments ?? []);
   const [editingComment, setEditingComment] = useState(null);
+  const [listActionError, setListActionError] = useState('');
+
+  const ownerId = typeof list?.owner === 'object' ? list?.owner?._id : list?.owner;
+  const creatorUsername =
+    typeof list?.owner === 'object'
+      ? list?.owner?.username
+      : list?.owner === user?._id
+        ? user?.username
+        : null;
+
+  const isOwner = Boolean(user?._id && ownerId && ownerId === user._id);
 
   useEffect(() => {
     if (!listId) {
@@ -36,7 +48,6 @@ const ShowList = () => {
       return;
     }
 
-    // If navigated from CreateList and passed data, render immediately.
     if (state?.list && state?.locations?.length) {
       setLoading(false);
       return;
@@ -50,20 +61,18 @@ const ShowList = () => {
         const fetched = await listService.getList(listId);
         setList(fetched);
 
-        // sets the comments when loading
         setComments(
-          fetched.comments?.map(comment => ({
+          fetched.comments?.map((comment) => ({
             _id: comment._id,
             text: comment.text,
             createdAt: comment.createdAt || new Date().toISOString(),
             owner: {
-              _id: comment.owner?._id, 
+              _id: comment.owner?._id,
               username: comment.owner?.username || 'Unknown',
             },
           })) || []
         );
-        
-        // Collect populated Location docs in list order
+
         const locDocs = (fetched.locations || [])
           .map((entry) => entry.location)
           .filter(Boolean);
@@ -74,7 +83,6 @@ const ShowList = () => {
           return;
         }
 
-        // Batch weather fetch (fast + resilient)
         const batchInput = locDocs.map((loc) => ({
           name: loc.name,
           latitude: loc.latitude,
@@ -94,8 +102,6 @@ const ShowList = () => {
         for (const loc of locDocs) {
           const k = coordKey(loc.longitude, loc.latitude);
           const r = byKey.get(k);
-
-          // Skip entries that failed to fetch forecast (keeps Forecast from getting stuck)
           if (!r?.forecast?.length) continue;
 
           built.push({
@@ -120,107 +126,164 @@ const ShowList = () => {
         setLoading(false);
       }
     })();
-  }, [listId]);
+  }, [listId, state]);
 
   const handleAddComment = async (commentFormData) => {
     try {
       const newComment = await commentService.createComment(listId, commentFormData);
-
       const safeComment = {
         _id: newComment._id || Date.now(),
         text: newComment.text || commentFormData.text,
         createdAt: newComment.createdAt || new Date().toISOString(),
         owner: {
-          _id: newComment.owner?._id || user._id, // <- assign logged-in user
-          username: newComment.owner?.username || "You",
+          _id: newComment.owner?._id || user?._id,
+          username: newComment.owner?.username || 'You',
         },
       };
-
-      setComments(prev => [...prev, safeComment]);
+      setComments((prev) => [...prev, safeComment]);
     } catch (err) {
       console.error('Failed to add comment:', err);
       alert('Failed to add comment. Please try again.');
     }
   };
 
+  const { deleteList } = useContext(ListsContext);
+
   const handleDeleteComment = async (commentId) => {
     if (!window.confirm('Delete this comment?')) return;
-
     await commentService.deleteComment(listId, commentId);
-    setComments(comments => comments.filter(comment => comment._id !== commentId));
-
-    if (editingComment?._id === commentId) {
-      setEditingComment(null);
-    }
+    setComments((prev) => prev.filter((comment) => comment._id !== commentId));
+    if (editingComment?._id === commentId) setEditingComment(null);
   };
 
   const handleUpdateComment = async (updatedCommentForm) => {
+    const { _id, text } = updatedCommentForm;
+    const updated = await commentService.updateComment(listId, _id, text);
+
+    const prev = comments.find((c) => c._id === _id);
+    const safeUpdated = {
+      _id: updated?._id || _id,
+      text: updated?.text ?? text,
+      createdAt: updated?.createdAt || prev?.createdAt || new Date().toISOString(),
+      owner: {
+        _id: updated?.owner?._id || updated?.owner || prev?.owner?._id || user?._id,
+        username: updated?.owner?.username || prev?.owner?.username || 'You',
+      },
+    };
+
+    setComments((prevList) => prevList.map((c) => (c._id === _id ? safeUpdated : c)));
+    return safeUpdated;
+  };
+
+  const handleDeleteList = async () => {
+    setListActionError('');
+    const ok = window.confirm(`Delete "${list?.name || 'this list'}"? This cannot be undone.`);
+    if (!ok) return;
+
     try {
-      const { _id, text } = updatedCommentForm;
-
-      const updatedComment = await commentService.updateComment(listId, _id, text);
-
-      setComments(comments =>
-        comments.map(comment =>
-          comment._id === updatedComment._id
-            ? { ...comment, text: updatedComment.text } 
-            : comment
-        )
-      );
-
-
-      return updatedComment;
+      await deleteList(listId);
+      navigate('/my-profile', { replace: true });
     } catch (err) {
-      console.error('Failed to update comment:', err);
-      throw err;
+      setListActionError(err?.message || 'Failed to delete list.');
     }
   };
 
-
-  if (loading) return <main className={styles.container}>Loading list…</main>;
-  if (error) return <main className={styles.container}>{error}</main>;
+  if (loading) return <main className={styles.state}>Loading list…</main>;
+  if (error) return <main className={styles.state}>{error}</main>;
 
   return (
     <main className={styles.container}>
-      <h2>{list?.name ?? 'List'}</h2>
-      {list?.description && <p>{list.description}</p>}
+      <section className={styles.gridArea}>
+        <Forecast locations={locations} reorderable={false} limit={20} />
+      </section>
 
-      <Forecast
-        locations={locations}
-        reorderable={false}
-        limit={20}
-      />
+      <aside className={styles.sidebar}>
+        <div className={styles.sidebarItem}>
+          <section className={styles.metaCard}>
+            <div className={styles.metaHeader}>
+              <h2 className={styles.metaTitle}>{list?.name ?? 'List'}</h2>
 
-      <section className={styles.comments}>
-        <h3>Comments</h3>
-        <CommentForm
-          listId={listId}
-          handleAddComment={handleAddComment}
-          editingComment={editingComment}
-          setEditingComment={setEditingComment}
-          handleUpdateComment={handleUpdateComment}
-        />
+              {isOwner ? (
+                <div className={styles.listActions}>
+                  <Link className={`${styles.actionBtn} ${styles.editBtn}`} to={`/lists/${listId}/edit`}>
+                    Edit
+                  </Link>
+                  <button
+                    className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                    type="button"
+                    onClick={handleDeleteList}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ) : null}
+            </div>
 
-        {comments.length === 0 && <p>There are no comments yet.</p>}
+            {list?.description ? (
+              <p className={styles.metaDescription}>{list.description}</p>
+            ) : (
+              <p className={styles.metaDescriptionMuted}>No description added yet.</p>
+            )}
 
-        {comments.map(comment => (
-          <article key={comment._id} className={styles.comment}>
-            <header>
-              <p>
-                {`${comment.owner._id === user._id ? 'You' : comment.owner.username} posted on ${new Date(comment.createdAt).toLocaleDateString()}`}
-              </p>
+            <p className={styles.metaByline}>by {creatorUsername || 'Unknown'}</p>
+            {listActionError ? <p className={styles.error}>{listActionError}</p> : null}
+          </section>
+        </div>
+
+        <div className={styles.sidebarItem}>
+          <section className={styles.commentsCard}>
+            <header className={styles.commentsHeader}>
+              <h3 className={styles.commentsTitle}>Comments</h3>
             </header>
-            <p>{comment.text}</p>
 
-            {user && comment.owner._id === user._id && (
-              <div className={styles.commentActions}>
-                <button onClick={() => setEditingComment(comment)}>Edit</button>
-                <button onClick={() => handleDeleteComment(comment._id)}>Delete</button>
+            <CommentForm
+              listId={listId}
+              handleAddComment={handleAddComment}
+              editingComment={editingComment}
+              setEditingComment={setEditingComment}
+              handleUpdateComment={handleUpdateComment}
+            />
+
+            {comments.length === 0 ? (
+              <p className={styles.emptyState}>There are no comments yet.</p>
+            ) : (
+              <div className={styles.commentList}>
+                {comments.map((comment) => {
+                  const isYou = Boolean(user?._id && comment.owner?._id === user._id);
+                  const who = isYou ? 'You' : comment.owner?.username || 'Unknown';
+                  const when = new Date(comment.createdAt).toLocaleDateString();
+
+                  return (
+                    <article key={comment._id} className={styles.comment}>
+                      <p className={styles.commentMeta}>{`${who} posted on ${when}`}</p>
+                      <p className={styles.commentText}>{comment.text}</p>
+
+                      {isYou && (
+                        <div className={styles.commentActions}>
+                          <button
+                            className={`${styles.actionBtn} ${styles.editBtn}`}
+                            type="button"
+                            onClick={() => setEditingComment(comment)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                            type="button"
+                            onClick={() => handleDeleteComment(comment._id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
               </div>
             )}
-          </article>
-        ))}
-      </section>
+          </section>
+        </div>
+      </aside>
     </main>
   );
 };
