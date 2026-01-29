@@ -24,6 +24,7 @@ const CreateList = ({ mode }) => {
   const { createList: createListCtx, updateList: updateListCtx } = useContext(ListsContext);
 
   const initialLocation = state?.initialLocation;
+  const seedLocations = state?.seedLocations;
 
   const { locations, setLocations, addLocation } = useWeatherList({
     initialLocation,
@@ -80,6 +81,36 @@ const CreateList = ({ mode }) => {
     })();
   }, [mode, listId, setLocations]);
 
+
+  // ====== CREATE MODE: seed from Landing "visible locations" (if provided) ======
+  useEffect(() => {
+    if (mode !== 'create') return;
+
+    // Keep existing behavior when routed here from Forecast dropdown
+    if (initialLocation?.name) return;
+
+    if (!Array.isArray(seedLocations) || seedLocations.length === 0) return;
+
+    // If the user already started building a list, don't overwrite it
+    if (locations.length) return;
+
+    const normalized = seedLocations
+      .filter((l) => l && (l.lon ?? l.longitude) != null && (l.lat ?? l.latitude) != null)
+      .map((l) => ({
+        _id: l._id, // keep if present
+        name: l.name,
+        lon: l.lon ?? l.longitude,
+        lat: l.lat ?? l.latitude,
+        forecast: l.forecast, // optional
+        source: l.source ?? 'landing',
+      }));
+
+    if (!normalized.length) return;
+
+    setError('');
+    setLocations(normalized);
+  }, [mode, initialLocation, seedLocations, locations.length, setLocations]);
+
   // ====== CREATE MODE: if no initialLocation was passed, default to "Your Location",
   // otherwise fall back to a random seeded city (single initial item) ======
   useEffect(() => {
@@ -89,7 +120,7 @@ const CreateList = ({ mode }) => {
     if (initialLocation?.name) return;
 
     // If user already has something in the list, don't mess with it.
-    if (locations.length) return;
+    if (Array.isArray(seedLocations) && seedLocations.length) return;
 
     let cancelled = false;
 
@@ -133,8 +164,7 @@ const CreateList = ({ mode }) => {
     return () => {
       cancelled = true;
     };
-  }, [mode, initialLocation, locations, addLocation]);
-
+  }, [mode, initialLocation, seedLocations, locations.length, addLocation]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));

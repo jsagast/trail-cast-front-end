@@ -47,7 +47,7 @@ const SignInForm = () => {
 
           <div className={styles.field}>
             <label className={styles.label} htmlFor="userId">
-              Username or Email:
+              Username:
             </label>
             <input
               className={styles.input}

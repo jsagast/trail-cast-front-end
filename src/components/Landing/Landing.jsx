@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Forecast from '../Forecast/Forecast.jsx';
 import { useWeatherList } from '../../hooks/useWeatherList.js';
 import Sidebar from '../Sidebar/Sidebar.jsx';
@@ -20,7 +21,19 @@ const pickRandomUnique = (arr, n) => {
 const Landing = () => {
   const { locations, setLocations, addLocation, addLocationsBatch } = useWeatherList({ limit: 5 });
 
-  // When a user selects a location from search, it should feel immediate
+  // Build the payload to seed CreateList
+  const seedLocations = (locations || [])
+    .filter((l) => l && (l.lon ?? l.longitude) != null && (l.lat ?? l.latitude) != null)
+    .map((l) => ({
+      name: l.name,
+      lon: l.lon ?? l.longitude,
+      lat: l.lat ?? l.latitude,
+      forecast: l.forecast, // optional
+      source: l.source ?? 'landing',
+    }));
+
+  const canMakeList = seedLocations.length > 0;
+
   const getWeather = useCallback(
     async (location) => {
       await addLocation(location, { insertAt: 'top' });
@@ -28,11 +41,9 @@ const Landing = () => {
     [addLocation]
   );
 
-  // Fast Landing load:
   useEffect(() => {
     let cancelled = false;
 
-    // 1) Seed cities (don’t block on geolocation)
     (async () => {
       try {
         const seeds = pickRandomUnique(SEED_LOCATIONS, 4);
@@ -42,13 +53,11 @@ const Landing = () => {
       }
     })();
 
-    // 2) Your Location (optional; not pinned)
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
           if (cancelled) return;
           try {
-            // Put it at the top so it's visible, but it's NOT pinned.
             await addLocation(
               {
                 name: 'Your Location',
@@ -82,7 +91,22 @@ const Landing = () => {
         />
       </section>
 
-      <Sidebar getWeather={getWeather} />
+      <aside className={styles.sidebar}>
+        <div className={styles.sidebarItem}>
+          <Sidebar getWeather={getWeather} />
+            <Link
+              to="/lists/new"
+              state={{ seedLocations }}
+              className={`${styles.makeListBtn} ${!canMakeList ? styles.makeListBtnDisabled : ''}`}
+              aria-disabled={!canMakeList}
+              onClick={(e) => {
+                if (!canMakeList) e.preventDefault();
+              }}
+            >
+              + Make List
+            </Link>
+        </div>
+      </aside>
     </main>
   );
 };

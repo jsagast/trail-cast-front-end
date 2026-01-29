@@ -14,7 +14,6 @@ const CommentForm = (props) => {
       }
     }, [props.editingComment]);
 
-
   const handleChange = (evt) => {
     setFormData({ ...formData, [evt.target.name]: evt.target.value });
   };

@@ -1,3 +1,5 @@
+/* src/pages/Landing/Landing.module.css */
+
 .container {
   padding-top: 70px; /* clear the fixed navbar */
   box-sizing: border-box;
@@ -8,10 +10,90 @@
   align-items: start;
 }
 
-/* Responsive: if the viewport isn’t wide enough, stack them */
+.gridArea {
+  min-width: 0; /* critical: lets Forecast manage its own overflow behavior */
+}
+
+/* Right column wrapper (doesn't change Sidebar internals) */
+.sidebar {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+
+  margin-top: 10px;
+  margin-right: 15px;
+}
+
+/* Width contract: make this match whatever your search wraps max out at */
+.sidebarItem {
+  width: 100%;
+  max-width: 300px;
+
+  /* 0 when sidebar column is <= 300px (pinned right),
+     grows to half the extra space when sidebar column is wider (centered) */
+  margin-right: max(0px, calc((100% - 300px) / 2));
+
+  /* IMPORTANT: prevents 100% children from “leaking” past padding/border */
+  box-sizing: border-box;
+}
+
+/* Button matches the width contract above */
+.makeListBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box; 
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  text-decoration: none;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.92);
+
+  background: #202020;
+  border: 1px solid rgba(56, 214, 107, 0.40);
+  margin-top: 500px;
+
+  transition: transform 120ms ease, color 120ms ease, text-shadow 120ms ease;
+}
+
+.makeListBtn:hover,
+.makeListBtn:focus-visible {
+  color: #38d66b;
+  text-shadow: 0 0 10px rgba(56, 214, 107, 0.45);
+}
+
+.makeListBtn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
+}
+
+.makeListBtnDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Responsive: preserve your existing stacking rule */
 @media (max-width: 675px) {
   .container {
     grid-template-columns: 1fr;
     justify-items: center;
+  }
+
+  .sidebar {
+    width: 100%;
+    align-items: center;
+    margin-right: 0;
+  }
+
+  .sidebarItem {
+    margin-right: 0;
+    max-width: 320px;
   }
 }

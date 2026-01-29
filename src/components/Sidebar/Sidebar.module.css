@@ -20,35 +20,3 @@
      grows to half the extra space when sidebar column is wider (centered) */
   margin-right: max(0px, calc((100% - 300px) / 2));
 }
-
-@media (max-width: 900px) {
-  .sidebar {
-    flex-direction: row;
-
-    /* more stable than space-evenly (prevents “drifting”) */
-    justify-content: center;
-    gap: 20px;
-
-    align-items: flex-start;
-
-    /* keep: forces full row width even though Landing centers grid items */
-    justify-self: stretch;
-    width: 100%;
-
-    margin-right: 0;
-    flex-wrap: wrap; /* keep: prevents the 2nd box getting clipped */
-  }
-
-  .locationSearchWrap,
-  .listSearchWrap {
-    margin-right: 0; /* disable the wide-layout margin trick */
-    margin-bottom: 20px;
-    min-width: 0;    /* critical: allows shrinking instead of clipping */
-
-    /* side-by-side when there’s room, wraps when not */
-    flex: 1 1 280px;
-
-    width: auto;
-    max-width: 320px;
-  }
-}
