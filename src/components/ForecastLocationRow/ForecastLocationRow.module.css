@@ -75,7 +75,7 @@
   width: 100%;
   box-sizing: border-box;
   
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--titleColor, rgba(255, 255, 255, 0.95));
   text-decoration: none;
 
   font-weight: 700;
@@ -101,7 +101,7 @@
 }
 
 .locationLink:hover {
-  color: var(--hoverColor, rgba(255, 255, 255, 0.95));
+  color: var(--hoverColor, var(--titleColor, rgba(255, 255, 255, 0.95)));
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
   text-decoration-color: currentColor;
@@ -189,37 +189,114 @@
   font: inherit;
 }
 
-/* === Right-side forecast cells (unchanged) === */
+.cell,
+.cell * {
+  cursor: default;
+  user-select: none;
+}
+
 .cell {
-  height: 100%;
-  width: 100%;
-
   position: relative;
-  z-index: 1;
-  background: 191919;
-
+  z-index: 0;
+  isolation: isolate;
+  overflow: visible;
   box-sizing: border-box;
-  overflow: hidden;
+
+  --dayBorderW: 10px;
+  --gridLeftW: 1px;
+  --gridRightW: 0px;
+
+  transition: opacity 140ms ease;
+  --halfDayBorderW: calc(var(--dayBorderW) / 2);
+}
+
+.cellFirst {
+  --dayBorderW: 0px;
+  --gridLeftW: 0px;
+}
+
+/* last day column will override via a class (see below) */
+.cellLast {
+  --gridRightW: 1px;
+}
+
+/* Subtle grid lines INSIDE the cell (so the gradient can cover them) */
+.cell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+
+  background:
+    /* top grid line */
+    linear-gradient(rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.10))
+      top / 100% 1px no-repeat,
+
+    /* bottom grid line */
+    linear-gradient(rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.10))
+      bottom / 100% 2px no-repeat,
+
+    /* left grid line (between day columns) */
+    linear-gradient(rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.10))
+      left / var(--gridLeftW, 0px) 100% no-repeat,
+
+    /* right OUTER edge only (optional) */
+    linear-gradient(rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.10))
+      right / var(--gridRightW, 0px) 100% no-repeat;
+}
+
+/* centered day divider (half on each side) */
+.cell::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  inset: 0;
+
+  width: var(--dayBorderW, 2px);
+  transform: translateX(-50%);
+
+  pointer-events: none;
+
+  z-index: 2;
+
+  background: color-mix(
+    in srgb,
+    var(--dayTitleColor, rgba(255, 255, 255, 0.18)) 100%,
+    rgba(255, 255, 255, 0.08)
+  );
+  opacity: var(--dividerOpacity, 1);
 }
 
 .cellInner {
   height: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
+  position: relative;
+}
+
+.dimmedCol {
+  opacity: 0.25;
+  z-index: 0;
+}
+
+.focusedCol {
+  opacity: 1;
+  z-index: 5;
 }
 
 .half {
   position: relative;
   overflow: hidden;
   height: 100%;
-  min-width: 0; /* prevents text overflow from breaking layout */
+  min-width: 0;
 
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  padding: 0.6rem;
+  align-items: stretch;
+  justify-content: flex-start;
   text-align: center;
   box-sizing: border-box;
 }
@@ -232,7 +309,7 @@
   position: relative;
   overflow: hidden;
 
-  background: #1e83d6;
+  background: #ffffff;
   color: #0b1220;
 }
 
@@ -241,10 +318,6 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-
-  background:
-    radial-gradient(circle at 18% 22%, rgba(120, 200, 255, 0.18) 0 80px, transparent 160px),
-    linear-gradient(180deg, rgba(255,255,255,0.0), rgba(255,255,255,0.35));
 
   opacity: 0.9;
 }
@@ -291,10 +364,6 @@
   opacity: 0.92;
 }
 
-.night .icon {
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
-}
-
 .empty {
   background: #191919;
   color: #191919;
@@ -302,7 +371,20 @@
 
 .icon {
   width: 120px;
-  height: 120px;
+  height: 110px;
+  flex-shrink: 0;
+  display: block;
+  align-self: center;
+  position: relative;
+  z-index: 1;
+}
+
+.focusedCol .icon {
+  z-index: 5; /* above .cell::before (2) */
+}
+
+.focusedCol::before {
+  z-index: -1;
 }
 
 .condition {
@@ -311,9 +393,16 @@
 }
 
 .temp {
-  font-size: 1.05rem;
+  flex: 1;                 /* take all remaining space under the icon */
+  display: flex;
+  align-items: center;      /* vertical center */
+  justify-content: center;  /* horizontal center */
+  width: 100%;
+
+  font-size: 1.1rem;
   font-weight: 900;
-  margin-bottom: 0.25rem;
+  flex-shrink: 0;
+  margin-bottom: 0rem;
 }
 
 .meta {
@@ -322,6 +411,7 @@
   font-size: 0.85rem;
   opacity: 0.9;
 }
+
 
 @media (prefers-reduced-motion: reduce) {
   .night::before { animation: none; }

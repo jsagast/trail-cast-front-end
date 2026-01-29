@@ -22,6 +22,7 @@ const ForecastLocationRow = ({
   listsLoading = false,
   listsError = '',
   titleColor,
+  hoverDayKey = null,
 }) => {
   const navigate = useNavigate();
 
@@ -38,7 +39,7 @@ const ForecastLocationRow = ({
 
   const linkRef = useRef(null);
   const [isTwoLineTitle, setIsTwoLineTitle] = useState(false);
-
+  
   const displayLabel =
     savingToList ? 'Adding…'
     : listsLoading ? 'Loading lists…'
@@ -205,8 +206,6 @@ const ForecastLocationRow = ({
           {p.temperature}°{p.temperatureUnit}
         </div>
         <div className={styles.meta}>
-          <div>💧 {p.probabilityOfPrecipitation?.value ?? 0}%</div>
-          <div>༄ {p.windSpeed}</div>
         </div>
       </div>
     );
@@ -253,7 +252,7 @@ const ForecastLocationRow = ({
             styles.locationLink,
             isTwoLineTitle ? styles.locationLinkTwoLine : '',
           ].join(' ')}
-          style={titleColor ? { '--hoverColor': titleColor } : undefined}
+          style={titleColor ? { '--titleColor': titleColor } : undefined}
           to={`/location?name=${encodeURIComponent(weatherData.name)}&lon=${weatherData.lon}&lat=${weatherData.lat}`}
           state={{ weatherData }}
         >
@@ -337,19 +336,42 @@ const ForecastLocationRow = ({
         )}
       </div>
 
-      {dayColumns.map(({ dateKey }) => {
-        const day = byDate[dateKey]?.day ?? null;
-        const night = byDate[dateKey]?.night ?? null;
+    {dayColumns.map((col, idx) => {
+      const dateKey = col.dateKey;
+      const day = byDate[dateKey]?.day ?? null;
+      const night = byDate[dateKey]?.night ?? null;
 
-        return (
-          <div key={dateKey} className={styles.cell}>
-            <div className={styles.cellInner}>
-              {renderHalf(day, false)}
-              {renderHalf(night, true)}
-            </div>
+      const dayTitleColor = col.titleColor
+      const isFirst = idx === 0;
+      const isLast = idx === dayColumns.length - 1;
+
+      const dim = hoverDayKey && hoverDayKey !== dateKey;
+      const focus = hoverDayKey === dateKey;
+      const dividerOpacity = (hoverDayKey && focus && !isFirst) ? 0.25 : 1;
+
+      return (
+        <div
+          key={dateKey}
+          data-daykey={dateKey}
+          className={[
+            styles.cell,
+            isFirst ? styles.cellFirst : '',
+            isLast ? styles.cellLast : '',
+            dim ? styles.dimmedCol : '',
+            focus ? styles.focusedCol : '',
+          ].join(' ')}
+          style={{
+            ...(dayTitleColor ? { '--dayTitleColor': dayTitleColor } : {}),
+            '--dividerOpacity': dividerOpacity,
+          }}
+        >
+          <div className={styles.cellInner}>
+            {renderHalf(day, false)}
+            {renderHalf(night, true)}
           </div>
-        );
-      })}
+        </div>
+      );
+    })}
     </>
   );
 };

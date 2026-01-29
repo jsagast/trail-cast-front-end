@@ -108,6 +108,9 @@ const Forecast = ({
 
   reorderable = false,
   showListDropdown = true,
+
+  // NEW: allow parent to control per-location title colors
+  titleColors = null, // can be array OR object map
 }) => {
   const [internalLocations, setInternalLocations] = useState([]);
   const locations = controlledLocations ?? internalLocations;
@@ -115,11 +118,18 @@ const Forecast = ({
 
   const dayColumns = useMemo(() => {
     if (!locations.length) return [];
-    return buildDayColumns(locations[0]?.forecast);
+
+    const cols = buildDayColumns(locations[0]?.forecast);
+
+    return cols.map((c, i, arr) => {
+      const t = arr.length <= 1 ? 0 : i / (arr.length - 1);
+      return { ...c, titleColor: sampleGradient(TRAIL_CAST_STOPS, t) };
+    });
   }, [locations]);
 
   const [dayOffset, setDayOffset] = useState(0);
   const [visibleDays, setVisibleDays] = useState(MAX_WINDOW_DAYS);
+  const [hoverDayKey, setHoverDayKey] = useState(null);
 
   const windowDays = Math.max(1, Math.min(visibleDays, dayColumns.length));
   const maxOffset = Math.max(0, dayColumns.length - windowDays);
@@ -226,14 +236,26 @@ const Forecast = ({
     gridTemplateRows: `var(--header-h) repeat(${locations.length}, var(--cell-h))`,
   };
 
+  const handleTablePointerMove = (e) => {
+    const el = e.target.closest?.('[data-daykey]');
+    const dk = el?.dataset?.daykey ?? null;
+
+    setHoverDayKey((prev) => (prev === dk ? prev : dk));
+  };
+  const handleTablePointerLeave = () => setHoverDayKey(null);
+
   const prevDisabled = dayOffset === 0;
   const nextDisabled = dayOffset === maxOffset;
 
   const renderRows = ({ lists = [], listsLoading = false, listsError = '' } = {}) =>
     locations.map((loc, idx) => {
-      // collective row spectrum (top row → bottom row)
       const tRow = locations.length <= 1 ? 0 : idx / (locations.length - 1);
-      const titleColor = sampleGradient(TRAIL_CAST_STOPS, tRow);
+      const key = locationKey(loc) || loc.name;
+
+      const titleColor =
+        Array.isArray(titleColors)
+          ? (titleColors[idx] ?? sampleGradient(TRAIL_CAST_STOPS, tRow))
+          : (titleColors?.[key] ?? sampleGradient(TRAIL_CAST_STOPS, tRow));
 
       return (
         <ForecastLocationRow
@@ -241,6 +263,7 @@ const Forecast = ({
           weatherData={loc}
           dayColumns={dayColumns}
           titleColor={titleColor}
+          hoverDayKey={hoverDayKey}
           reorder={
             reorderable
               ? {
@@ -262,7 +285,13 @@ const Forecast = ({
 
   return (
     <main className={styles.main}>
-      <div ref={tableRef} className={styles.table} style={gridStyle}>
+      <div
+        ref={tableRef}
+        className={styles.table}
+        style={gridStyle}
+        onPointerMove={handleTablePointerMove}
+        onPointerLeave={handleTablePointerLeave}
+      >
         <div className={styles.corner}>
           <div className={styles.cornerInner}>
             <div className={styles.dayNav}>
@@ -287,13 +316,21 @@ const Forecast = ({
           </div>
         </div>
 
-        {dayColumns.map((c, i) => {
-          // collective day spectrum across all available days
-          const t = dayColumns.length <= 1 ? 0 : i / (dayColumns.length - 1);
-          const color = sampleGradient(TRAIL_CAST_STOPS, t);
+        {dayColumns.map((c) => {
+          const dim = hoverDayKey && hoverDayKey !== c.dateKey;
+          const focus = hoverDayKey === c.dateKey;
 
           return (
-            <div key={c.dateKey} className={styles.dayHeader} style={{ color }}>
+            <div
+              key={c.dateKey}
+              data-daykey={c.dateKey}
+              className={[
+                styles.dayHeader,
+                dim ? styles.dimmedCol : '',
+                focus ? styles.focusedCol : '',
+              ].join(' ')}
+              style={{ color: c.titleColor }}
+            >
               {c.label}
             </div>
           );
