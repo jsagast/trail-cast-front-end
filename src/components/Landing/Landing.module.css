@@ -1,5 +1,3 @@
-/* src/pages/Landing/Landing.module.css */
-
 .container {
   padding-top: 70px; /* clear the fixed navbar */
   box-sizing: border-box;
@@ -14,19 +12,19 @@
   min-width: 0; /* critical: lets Forecast manage its own overflow behavior */
 }
 
-/* Right column wrapper (doesn't change Sidebar internals) */
+/* Right column wrapper */
 .sidebar {
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 14px;
+  gap: 20px;
 
   margin-top: 10px;
   margin-right: 15px;
 }
 
-/* Width contract: make this match whatever your search wraps max out at */
+/* Shared “sidebar item” contract (same idea as your Sidebar component wrappers) */
 .sidebarItem {
   width: 100%;
   max-width: 300px;
@@ -34,31 +32,28 @@
   /* 0 when sidebar column is <= 300px (pinned right),
      grows to half the extra space when sidebar column is wider (centered) */
   margin-right: max(0px, calc((100% - 300px) / 2));
-
-  /* IMPORTANT: prevents 100% children from “leaking” past padding/border */
-  box-sizing: border-box;
 }
 
-/* Button matches the width contract above */
+/* Button should match the search bars' actual width (they cap at 280px) */
 .makeListBtn {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
   width: 100%;
-  max-width: 100%;
-  box-sizing: border-box; 
+  max-width: 280px;
 
+  margin-top: 400px;
   padding: 10px 12px;
   border-radius: 12px;
 
   text-decoration: none;
-  font-weight: 800;
+  font-weight: 600;
   color: rgba(255, 255, 255, 0.92);
 
-  background: #202020;
+  background: #444444;
   border: 1px solid rgba(56, 214, 107, 0.40);
-  margin-top: 500px;
 
   transition: transform 120ms ease, color 120ms ease, text-shadow 120ms ease;
 }

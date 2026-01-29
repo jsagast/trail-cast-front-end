@@ -2,7 +2,8 @@ import { useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Forecast from '../Forecast/Forecast.jsx';
 import { useWeatherList } from '../../hooks/useWeatherList.js';
-import Sidebar from '../Sidebar/Sidebar.jsx';
+import LocationSearch from '../LocationSearch/LocationSearch.jsx';
+import ListSearch from '../ListSearch/ListSearch.jsx';
 import { SEED_LOCATIONS } from '../../constants/seedLocations.js';
 import styles from './Landing.module.css';
 
@@ -82,29 +83,30 @@ const Landing = () => {
   return (
     <main className={styles.container}>
       <section className={styles.gridArea}>
-        <Forecast
-          locations={locations}
-          setLocations={setLocations}
-          mode="newestTop"
-          reorderable={true}
-          limit={5}
-        />
+        <Forecast locations={locations} setLocations={setLocations} mode="newestTop" reorderable={true} limit={5} />
       </section>
 
       <aside className={styles.sidebar}>
         <div className={styles.sidebarItem}>
-          <Sidebar getWeather={getWeather} />
-            <Link
-              to="/lists/new"
-              state={{ seedLocations }}
-              className={`${styles.makeListBtn} ${!canMakeList ? styles.makeListBtnDisabled : ''}`}
-              aria-disabled={!canMakeList}
-              onClick={(e) => {
-                if (!canMakeList) e.preventDefault();
-              }}
-            >
-              + Make List
-            </Link>
+          <LocationSearch getWeather={getWeather} autoLoad={false} />
+        </div>
+
+        <div className={styles.sidebarItem}>
+          <ListSearch />
+        </div>
+
+        <div className={styles.sidebarItem}>
+          <Link
+            to="/lists/new"
+            state={{ seedLocations }}
+            className={`${styles.makeListBtn} ${!canMakeList ? styles.makeListBtnDisabled : ''}`}
+            aria-disabled={!canMakeList}
+            onClick={(e) => {
+              if (!canMakeList) e.preventDefault();
+            }}
+          >
+            + Make List
+          </Link>
         </div>
       </aside>
     </main>

@@ -1,6 +1,5 @@
 .container {
     padding-top: 70px;
-    padding-bottom: 48px;
     box-sizing: border-box;
 
     display: grid;
@@ -43,10 +42,10 @@
   padding: 16px 16px 14px;
 
   background:
-    radial-gradient(900px 420px at 0% 0%, rgba(251, 95, 4, 0.25), transparent 75%),
-    radial-gradient(900px 420px at 40% 0%, rgba(240, 206, 26, 0.25), transparent 75%),
-    radial-gradient(900px 420px at 100% 0%, rgba(5, 105, 168, 0.3), transparent 75%),
-    radial-gradient(900px 420px at 100% 70%, rgba(27, 153, 168, 0.3), transparent 78%),
+    radial-gradient(900px 420px at 0% 0%, rgba(251, 95, 4, 0.3), transparent 75%),
+    radial-gradient(900px 420px at 40% 0%, rgba(240, 206, 26, 0.3), transparent 75%),
+    radial-gradient(900px 420px at 100% 0%, rgba(5, 105, 168, 0.5), transparent 75%),
+    radial-gradient(900px 420px at 100% 70%, rgba(27, 153, 168, 0.5), transparent 78%),
     transparent;
 
   /* keep your border (or swap if you want it brighter) */
@@ -139,7 +138,8 @@
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(255, 255, 255, 0.14);
 
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 600;
   color: rgba(255, 255, 255, 0.95);
 
   cursor: pointer;

@@ -29,10 +29,10 @@
 .section {
   /* more contrast: panel is noticeably lighter than page bg */
     background:
-  radial-gradient(1100px 700px at 0% 0%, rgba(251, 95, 4, 0.3), transparent 75%),
-  radial-gradient(1100px 700px at 40% 0%, rgba(240, 206, 26, 0.3), transparent 75%),
-  radial-gradient(1100px 700px at 100% 0%, rgba(5, 105, 168, 0.3), transparent 75%),
-  radial-gradient(1100px 700px at 100% 70%, rgba(27, 153, 168, 0.3), transparent 78%),
+  radial-gradient(1100px 700px at 0% 0%, rgba(251, 95, 4, 0.4), transparent 75%),
+  radial-gradient(1100px 700px at 40% 0%, rgba(240, 206, 26, 0.4), transparent 75%),
+  radial-gradient(1100px 700px at 100% 0%, rgba(5, 105, 168, 0.5), transparent 75%),
+  radial-gradient(1100px 700px at 100% 70%, rgba(27, 153, 168, 0.5), transparent 78%),
   transparent;
   border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 18px;
@@ -55,7 +55,7 @@
 .sectionHeader h3 {
   margin: 0;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .newBtn {
@@ -118,7 +118,7 @@
   overflow: hidden;
 
   /* more contrast: cards noticeably lighter than panel */
-  background: #2a2a2a;
+  background: #202020;
   border: 1px solid rgba(255, 255, 255, 0.12);
 
   transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
@@ -147,7 +147,7 @@
 
 /* Title hover uses the Forecast-style gradient var --hoverColor */
 .listTitle {
-  font-weight: 900;
+  font-weight: 650;
   font-size: 16px;
   line-height: 1.2;
 
