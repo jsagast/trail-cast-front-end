@@ -294,7 +294,7 @@ const CreateList = ({ mode }) => {
                   value={form.description}
                   onChange={handleChange}
                   placeholder="Tell us some interesting things about this collection of locations"
-                  rows={3}
+                  rows={5}
                 />
               </label>
 

@@ -65,10 +65,6 @@ const LocationSearch = ({ getWeather, autoLoad = false }) => {
   return (
     <div className={styles.searchContainer}>
       <form onSubmit={(e) => e.preventDefault()}>
-        <label htmlFor="search" className={styles.searchLabel}>
-          Search Location:
-        </label>
-
         <input
           id="search"
           type="text"

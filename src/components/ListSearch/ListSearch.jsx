@@ -62,10 +62,6 @@ export default function ListSearch() {
   return (
     <div className={styles.searchContainer}>
       <form onSubmit={(e) => e.preventDefault()}>
-        <label htmlFor="list-search" className={styles.searchLabel}>
-          Search Lists:
-        </label>
-
         <input
           id="list-search"
           type="text"
