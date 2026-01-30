@@ -202,3 +202,13 @@
     max-width: 320px;
   }
 }
+
+.sidebar {
+  --sidebarItemW: 280px;
+}
+
+.sidebarItem {
+  width: 100%;
+  max-width: var(--sidebarItemW);
+  margin-right: max(0px, calc((100% - var(--sidebarItemW)) / 2));
+}

@@ -40,6 +40,7 @@
   width: 100%;
   border-radius: 18px;
   padding: 16px 16px 14px;
+  margin-top: 20px;
 
   background:
     linear-gradient(
@@ -77,15 +78,17 @@
 /* ===== Activity Log (leave look as-is, but scoped so it doesn't affect sidebar search) ===== */
 
 .comments {
-  margin-top: 2rem;
+  margin-top: 4rem;
   padding: 1rem;
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
   background-color: #111;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
 }
 
 .comments h3 {
-  margin-bottom: 1rem;
+  margin: 0 0 10px;
   font-size: 1.5rem;
   color: #f5f5f5;
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
@@ -107,14 +110,20 @@
 
 .comment header p {
   font-size: 0.875rem;
-  color: #aaa;
+  color: #d1d1d1;
   margin-bottom: 0.5rem;
 }
 
-.comment .activity p {
-  margin: 0.3rem 0;
-  font-size: 1rem;
-  color: #e5e5e5;
+.comment header p {
+  color: #fff;
+}
+
+.comment :global(.activity) p {
+  color: #fff;
+}
+
+.comment :global(.activity) strong {
+  color: #fff;
 }
 
 .commentActions {
@@ -201,6 +210,47 @@
   padding: 0.5rem 0;
 }
 
+/* Button should match the search bars' actual width (they cap at 280px) */
+.makeListBtn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 200px;
+
+  width: 100%;
+  max-width: 280px;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  text-decoration: none;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+
+  background: #444444;
+  border: 1px solid rgba(56, 214, 107, 0.40);
+
+  transition: transform 120ms ease, color 120ms ease, text-shadow 120ms ease;
+}
+
+.makeListBtn:hover,
+.makeListBtn:focus-visible {
+  color: #38d66b;
+  text-shadow: 0 0 10px rgba(56, 214, 107, 0.45);
+}
+
+.makeListBtn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
+}
+
+.makeListBtnDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+
 /* Responsive: stack like the other pages */
 @media (max-width: 675px) {
   .container {
@@ -232,4 +282,22 @@
     width: auto;
     max-width: 320px;
   }
+}
+
+.sidebar {
+  --sidebarItemW: 280px; /* pick 280 or 300 */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 24px;
+
+  margin-top: 10px;
+  margin-right: 15px;
+}
+
+.sidebarItem {
+  width: 100%;
+  max-width: var(--sidebarItemW);
+  margin-right: max(0px, calc((100% - var(--sidebarItemW)) / 2));
 }

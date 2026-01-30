@@ -117,7 +117,7 @@ const Profile = () => {
           </ul>
         )}
 
-        <h3>Saved lists</h3>
+        {/* <h3>Saved lists</h3> */}
       </section>
     </main>
   );

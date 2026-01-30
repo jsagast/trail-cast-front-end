@@ -82,7 +82,19 @@ const createLocation = async (locationData) => {
 const getLocationByCoords = async (lat, lon) => {
   const la = Number(lat);
   const lo = Number(lon);
-  if (!Number.isFinite(la) || !Number.isFinite(lo)) return null; 
+  if (!Number.isFinite(la) || !Number.isFinite(lo)) return null;
+
+  // try exact first
+  const url = `${BASE_URL}/by-coords?lat=${encodeURIComponent(la)}&lon=${encodeURIComponent(lo)}`;
+  const res = await fetch(url);
+
+  // /by-coords returns 200 with either an object or null
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status}${body ? ` - ${body.slice(0, 120)}` : ""}`);
+  }
+
+  return res.json();
 };
 
 export {

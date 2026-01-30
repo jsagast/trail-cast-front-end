@@ -91,7 +91,7 @@ const Landing = () => {
           <LocationSearch getWeather={getWeather} autoLoad={false} />
         </div>
 
-        <div className={styles.sidebarItem}>
+        <div className={`${styles.sidebarItem} ${styles.listSearchWrap}`}>
           <ListSearch />
         </div>
 

@@ -1,5 +1,5 @@
-import { useLocation, useSearchParams } from 'react-router-dom';
-import { useEffect, useState, useContext, useRef } from 'react';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { useEffect, useLayoutEffect, useState, useContext, useRef } from 'react';
 import Forecast from '../../components/Forecast/Forecast.jsx';
 import LocationSearch from '../../components/LocationSearch/LocationSearch.jsx';
 import styles from './ShowLocation.module.css';
@@ -38,12 +38,15 @@ const ShowLocation = () => {
   const shouldUsePassedNow =
     !!passed && !!titleKey && passedKey === titleKey && usedPassedKeyRef.current !== titleKey;
 
-  if (shouldUsePassedNow) usedPassedKeyRef.current = titleKey;
+  useEffect(() => {
+    if (shouldUsePassedNow) usedPassedKeyRef.current = titleKey;
+  }, [shouldUsePassedNow, titleKey]);
 
   const forecastWeatherData = shouldUsePassedNow ? passed : weatherData;
   const forecastKey = titleKey || 'forecast';
 
   const [savedLocation, setSavedLocation] = useState(null);
+  const [forecastLocations, setForecastLocations] = useState([]);
   const [activities, setActivities] = useState([]);
   const [editingActivity, setEditingActivity] = useState(null);
   const [error, setError] = useState('');
@@ -60,6 +63,20 @@ const ShowLocation = () => {
       },
     }));
 
+  const seedLocations = (forecastLocations || [])
+  .filter((l) => l && (l.lon ?? l.longitude) != null && (l.lat ?? l.latitude) != null)
+  .map((l) => ({
+    name: l.name,
+    lon: l.lon ?? l.longitude,
+    lat: l.lat ?? l.latitude,
+    forecast: l.forecast, // optional
+    source: l.source ?? 'showLocation',
+  }));
+
+  useLayoutEffect(() => {
+    setForecastLocations([]);
+  }, [titleKey]);
+  
   // Hydrate hook state from Link state (safe, but Forecast uses shouldUsePassedNow to avoid “sticky passed”).
   useEffect(() => {
     if (passed) setWeatherData(passed);
@@ -186,6 +203,8 @@ const ShowLocation = () => {
           mode="pinFirst"
           reorderable={true}
           limit={5}
+          locations={forecastLocations}
+          setLocations={setForecastLocations}
         />
 
         <section className={styles.comments}>
@@ -248,6 +267,17 @@ const ShowLocation = () => {
         <div className={styles.sidebarItem}>
           <LocationSearch getWeather={getWeather} autoLoad={false} />
         </div>
+
+        <div className={styles.sidebarItem}>
+          <Link
+            to="/lists/new"
+            state={{ seedLocations }}
+            className={styles.makeListBtn}
+          >
+            + Make List
+          </Link>
+        </div>
+
       </aside>
     </main>
   );

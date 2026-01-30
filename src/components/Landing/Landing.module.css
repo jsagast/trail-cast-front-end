@@ -34,6 +34,10 @@
   margin-right: max(0px, calc((100% - 300px) / 2));
 }
 
+.listSearchWrap {
+  margin-top: 20px;
+}
+
 /* Button should match the search bars' actual width (they cap at 280px) */
 .makeListBtn {
   box-sizing: border-box;
@@ -44,7 +48,7 @@
   width: 100%;
   max-width: 280px;
 
-  margin-top: 525px;
+  margin-top: 505px;
   padding: 10px 12px;
   border-radius: 12px;
 
