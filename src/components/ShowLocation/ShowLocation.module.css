@@ -1,4 +1,5 @@
-/* Match Landing/CreateList/ShowList layout contract */
+/* ===== Layout contract (Landing/CreateList/ShowList) ===== */
+
 .container {
   padding-top: 70px;
   padding-bottom: 48px;
@@ -10,31 +11,51 @@
   align-items: start;
 }
 
+/* Prevent default body margin + tiny overflow from pseudo-elements */
+:global(html),
+:global(body) {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
 .gridArea {
   min-width: 0;
 }
 
-/* Sidebar sizing/positioning like the other pages */
+/* ===== Sidebar ===== */
+
 .sidebar {
+  --sidebarItemW: 280px; /* 280 or 300 */
+
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 24px;
 
-  margin-top: 10px;
   margin-right: 15px;
+  padding-top: 10px;
+
+  box-sizing: border-box;
 }
 
 .sidebarItem {
   width: 100%;
-  max-width: 300px;
+  max-width: var(--sidebarItemW);
 
-  /* centered in the sidebar column when sidebar column is wider than 300px */
-  margin-right: max(0px, calc((100% - 300px) / 2));
+  /* center inside sidebar column when that column is wider than the max width */
+  margin-right: max(0px, calc((100% - var(--sidebarItemW)) / 2));
 }
 
-/* Meta card (same visual language as your other pages) */
+/* Keep Make List visible without forcing page height (prevents "empty scroll") */
+.sidebarItem:last-child {
+  position: sticky;
+  bottom: 24px;
+}
+
+/* ===== Meta card ===== */
+
 .metaCard {
   box-sizing: border-box;
   width: 100%;
@@ -75,16 +96,44 @@
   color: rgba(255, 255, 255, 0.55);
 }
 
-/* ===== Activity Log (leave look as-is, but scoped so it doesn't affect sidebar search) ===== */
+/* ===== Activity Log (scoped so it doesn't affect sidebar search) ===== */
 
 .comments {
-  margin-top: 4rem;
-  padding: 1rem;
-  padding-top: 0.7rem;
-  padding-bottom: 0.7rem;
+  margin: 4rem auto 0;
+  width: 50%;
+
+  box-sizing: border-box;
+  position: relative;
+
+  padding: 1rem 1rem 0.7rem;
+
   background-color: #111;
-  border-radius: 12px;
+  border-radius: 18px;
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.comments::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 19px;
+  padding: 1px;
+
+  background: linear-gradient(
+    90deg,
+    rgba(251, 95, 4, 0.55),
+    rgba(240, 206, 26, 0.55),
+    rgba(95, 214, 227, 0.55),
+    rgba(22, 146, 223, 0.55)
+  );
+
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+
+  pointer-events: none;
 }
 
 .comments h3 {
@@ -110,18 +159,11 @@
 
 .comment header p {
   font-size: 0.875rem;
-  color: #d1d1d1;
-  margin-bottom: 0.5rem;
-}
-
-.comment header p {
+  margin: 0 0 0.5rem;
   color: #fff;
 }
 
-.comment :global(.activity) p {
-  color: #fff;
-}
-
+.comment :global(.activity) p,
 .comment :global(.activity) strong {
   color: #fff;
 }
@@ -156,7 +198,7 @@
   transform: translateY(-1px);
 }
 
-/* IMPORTANT: scope ActivityForm styling so it doesn't leak into LocationSearch */
+/* ActivityForm styling (scoped) */
 .comments form {
   display: flex;
   flex-direction: column;
@@ -210,13 +252,21 @@
   padding: 0.5rem 0;
 }
 
-/* Button should match the search bars' actual width (they cap at 280px) */
+/* calendar icon white (Chrome/Edge/Safari) */
+.comments form input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.9;
+  cursor: pointer;
+}
+
+/* ===== Make List button ===== */
+
 .makeListBtn {
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: 200px;
+  margin-top: 60px;
 
   width: 100%;
   max-width: 280px;
@@ -250,8 +300,8 @@
   cursor: not-allowed;
 }
 
+/* ===== Responsive ===== */
 
-/* Responsive: stack like the other pages */
 @media (max-width: 675px) {
   .container {
     grid-template-columns: 1fr;
@@ -259,12 +309,13 @@
   }
 
   .sidebar {
+    padding-top: 0;
+
     flex-direction: row;
     justify-content: center;
     gap: 20px;
 
     align-items: flex-start;
-
     justify-self: stretch;
     width: 100%;
 
@@ -278,26 +329,15 @@
     min-width: 0;
 
     flex: 1 1 280px;
-
     width: auto;
     max-width: 320px;
   }
-}
 
-.sidebar {
-  --sidebarItemW: 280px; /* pick 280 or 300 */
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 24px;
+  .sidebarItem:last-child {
+    position: static;
+  }
 
-  margin-top: 10px;
-  margin-right: 15px;
-}
-
-.sidebarItem {
-  width: 100%;
-  max-width: var(--sidebarItemW);
-  margin-right: max(0px, calc((100% - var(--sidebarItemW)) / 2));
+  .comments {
+    width: 100%;
+  }
 }
