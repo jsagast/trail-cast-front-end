@@ -4,13 +4,35 @@ import * as forecastService from '../services/forecastService.js';
 const normalizeName = (name) =>
   name?.replace?.(', United States of America', '') ?? name ?? 'Selected Location';
 
-const keyFrom = (loc) => {
+// --- de-dupe helpers ---
+const normalizeNameKey = (name) =>
+  String(normalizeName(name) ?? '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+
+const coordKeyFrom = (loc) => {
   const lon = loc?.longitude ?? loc?.lon;
   const lat = loc?.latitude ?? loc?.lat;
-  if (lon == null || lat == null) return String(loc?.name ?? '');
-  const lo = Math.round(Number(lon) * 10000) / 10000;
-  const la = Math.round(Number(lat) * 10000) / 10000;
+  if (lon == null || lat == null) return null;
+  const lo = Math.round(Number(lon) * 500) / 500;
+  const la = Math.round(Number(lat) * 500) / 500;
+  if (!Number.isFinite(lo) || !Number.isFinite(la)) return null;
   return `${lo}|${la}`;
+};
+
+const keysFrom = (loc) => ({
+  nameKey: normalizeNameKey(loc?.name),
+  coordKey: coordKeyFrom(loc),
+});
+
+const isDup = (a, bKeys) => {
+  if (!a) return false;
+  const aKeys = keysFrom(a);
+  return (
+    (aKeys.coordKey && bKeys.coordKey && aKeys.coordKey === bKeys.coordKey) ||
+    (aKeys.nameKey && bKeys.nameKey && aKeys.nameKey === bKeys.nameKey)
+  );
 };
 
 export function useWeatherList({ initialLocation = null, limit = 20 } = {}) {
@@ -40,10 +62,11 @@ export function useWeatherList({ initialLocation = null, limit = 20 } = {}) {
         lat: latitude,
       };
 
-      const nextKey = keyFrom(next);
+      const nextKeys = keysFrom(next);
 
       setLocations((prev) => {
-        const without = prev.filter((l) => keyFrom(l) !== nextKey);
+        // Remove any existing location that matches by coords OR by name.
+        const without = prev.filter((l) => !isDup(l, nextKeys));
 
         const merged = insertAt === 'top'
           ? [next, ...without]
@@ -70,27 +93,52 @@ export function useWeatherList({ initialLocation = null, limit = 20 } = {}) {
           lat: r.lat ?? r.latitude,
         }));
 
+      // De-dupe the incoming batch itself by coords OR name (keep first occurrence).
+      const incoming = [];
+      const incomingNameKeys = new Set();
+      const incomingCoordKeys = new Set();
+      for (const l of normalized) {
+        const { nameKey, coordKey } = keysFrom(l);
+        const seenByCoord = coordKey && incomingCoordKeys.has(coordKey);
+        const seenByName = nameKey && incomingNameKeys.has(nameKey);
+        if (seenByCoord || seenByName) continue;
+        if (coordKey) incomingCoordKeys.add(coordKey);
+        if (nameKey) incomingNameKeys.add(nameKey);
+        incoming.push(l);
+      }
+
       setLocations((prev) => {
-        const incomingKeys = new Set(normalized.map(keyFrom));
-        const base = prev.filter((l) => !incomingKeys.has(keyFrom(l)));
+        // Remove any existing location that matches *any* incoming entry by coords OR name.
+        const base = prev.filter((l) => {
+          const { nameKey, coordKey } = keysFrom(l);
+          return !(
+            (coordKey && incomingCoordKeys.has(coordKey)) ||
+            (nameKey && incomingNameKeys.has(nameKey))
+          );
+        });
 
         const merged = insertAt === 'top'
-          ? [...normalized, ...base]
-          : [...base, ...normalized];
+          ? [...incoming, ...base]
+          : [...base, ...incoming];
 
-        const seen = new Set();
+        // Final pass: enforce OR-uniqueness across the merged list.
+        const seenName = new Set();
+        const seenCoord = new Set();
         const out = [];
         for (const l of merged) {
-          const k = keyFrom(l);
-          if (seen.has(k)) continue;
-          seen.add(k);
+          const { nameKey, coordKey } = keysFrom(l);
+          const dupByCoord = coordKey && seenCoord.has(coordKey);
+          const dupByName = nameKey && seenName.has(nameKey);
+          if (dupByCoord || dupByName) continue;
+          if (coordKey) seenCoord.add(coordKey);
+          if (nameKey) seenName.add(nameKey);
           out.push(l);
           if (out.length >= limit) break;
         }
         return out;
       });
 
-      return normalized;
+      return incoming;
     },
     [limit]
   );
