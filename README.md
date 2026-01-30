@@ -97,6 +97,7 @@ VITE_BACK_END_SERVER_URL=http://localhost:3000
 
 ### Let's use the App
 ---
-Check out the following link [XXX](https:)
+Front End Link: https://trail-cast.netlify.app/
+Back End Link: https://trail-cast-app-5dddddf35620.herokuapp.com/
 
 :rocket::boom:

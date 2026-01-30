@@ -9,7 +9,6 @@ import ActivityForm from '../ActivityForm/ActivityForm.jsx';
 import * as activityService from '../../services/activityService.js';
 import * as forecastService from '../../services/forecastService.js';
 
-
 const ShowLocation = () => {
   const { state } = useLocation();
   const { user } = useContext(UserContext);
@@ -27,9 +26,8 @@ const ShowLocation = () => {
   const [editingActivity, setEditingActivity] = useState(null);
   const [error, setError] = useState('');
 
-
-  const formatActivities = (activities = []) =>
-    activities.map(activity => ({
+  const formatActivities = (list = []) =>
+    list.map((activity) => ({
       _id: activity._id,
       text: activity.text,
       day: activity.day,
@@ -38,14 +36,14 @@ const ShowLocation = () => {
         _id: activity.author?._id,
         username: activity.author?.username || 'Unknown',
       },
-  }));
+    }));
 
-  // if navigated from Link with state, use it immediately
+  // If navigated from Link with state, use it immediately
   useEffect(() => {
     if (passed) setWeatherData(passed);
   }, [passed, setWeatherData]);
 
-  // if opened via URL, fetch by lon/lat
+  // If opened via URL, fetch by lon/lat
   useEffect(() => {
     if (passed) return;
     if (!lon || !lat) return;
@@ -60,55 +58,50 @@ const ShowLocation = () => {
     );
   }, [passed, lon, lat, name, getWeather]);
 
-console.log(weatherData);
-useEffect(() => {
-  const fetchSavedLocation = async () => {
-    if (!weatherData) return;
+  useEffect(() => {
+    const fetchSavedLocation = async () => {
+      if (!weatherData) return;
 
-    try {
-      const location = await forecastService.getLocationByCoords(
-        weatherData.lat,
-        weatherData.lon
-      );
+      try {
+        const loc = await forecastService.getLocationByCoords(weatherData.lat, weatherData.lon);
 
-      console.log(location);
+        if (loc) {
+          setSavedLocation(loc);
+          setActivities(formatActivities(loc.activities || []));
+        } else {
+          setSavedLocation(null);
+          setActivities([]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch saved location:', err);
+        setError('Failed to load activities.');
+      }
+    };
 
-      if (location) {
-        setSavedLocation(location);
-        setActivities(formatActivities(location.activities || []));
-      } else {
-        setSavedLocation(null);
-        setActivities([]);
-      };
-
-    } catch (err) {
-      console.error('Failed to fetch saved location:', err);
-      setError('Failed to load activities.');
-    }
-  };
-
-  fetchSavedLocation();
-}, [weatherData]);
+    fetchSavedLocation();
+  }, [weatherData]);
 
   const handleAddActivity = async (activityFormData) => {
     try {
- 
-      if (!location) {
-        location = await forecastService.createLocation({
+      setError('');
+
+      if (!weatherData) {
+        setError('No location selected.');
+        return;
+      }
+
+      // FIX: use savedLocation; create it if needed
+      let loc = savedLocation;
+      if (!loc) {
+        loc = await forecastService.createLocation({
           name: weatherData.name,
           latitude: weatherData.lat,
-          longitude: weatherData.lon
+          longitude: weatherData.lon,
         });
-        setSavedLocation(location);
+        setSavedLocation(loc);
       }
-      console.log(savedLocation)
-      console.log(savedLocation._id);
 
-      const newActivity = await activityService.createActivity(
-        // location._id,
-        savedLocation._id,
-        activityFormData
-      );
+      const newActivity = await activityService.createActivity(loc._id, activityFormData);
 
       const safeActivity = {
         _id: newActivity._id || Date.now(),
@@ -116,12 +109,12 @@ useEffect(() => {
         day: newActivity.day || activityFormData.day,
         createdAt: newActivity.createdAt || new Date().toISOString(),
         author: {
-          _id: newActivity.author?._id || user._id,
+          _id: newActivity.author?._id || user?._id,
           username: newActivity.author?.username || 'You',
         },
       };
 
-      setActivities(prev => [...prev, safeActivity]);
+      setActivities((prev) => [...prev, safeActivity]);
     } catch (err) {
       console.error('Failed to add activity:', err);
       setError('Failed to add activity.');
@@ -129,102 +122,99 @@ useEffect(() => {
   };
 
   const handleDeleteActivity = async (activityId) => {
+    if (!savedLocation?._id) return;
     if (!window.confirm('Delete this activity?')) return;
 
     await activityService.deleteActivity(savedLocation._id, activityId);
 
-    setActivities(activities =>
-      activities.filter(activity => activity._id !== activityId)
-    );
+    setActivities((prev) => prev.filter((a) => a._id !== activityId));
 
-    if (editingActivity?._id === activityId) {
-      setEditingActivity(null);
-    }
+    if (editingActivity?._id === activityId) setEditingActivity(null);
   };
 
   const handleUpdateActivity = async (updatedActivityForm) => {
-    try {
-      const { _id, text, day } = updatedActivityForm;
+    if (!savedLocation?._id) return;
 
-      const updatedActivity = await activityService.updateActivity(
-        savedLocation._id,
-        _id,
-        { text, day }
-      );
+    const { _id, text, day } = updatedActivityForm;
 
-      setActivities(activities =>
-        activities.map(activity =>
-          activity._id === updatedActivity._id
-            ? { ...activity, text: updatedActivity.text, day: updatedActivity.day }
-            : activity
-        )
-      );
+    const updatedActivity = await activityService.updateActivity(savedLocation._id, _id, { text, day });
 
-      return updatedActivity;
-    } catch (err) {
-      console.error('Failed to update activity:', err);
-      throw err;
-    }
+    setActivities((prev) =>
+      prev.map((a) =>
+        a._id === updatedActivity._id ? { ...a, text: updatedActivity.text, day: updatedActivity.day } : a
+      )
+    );
+
+    return updatedActivity;
   };
 
-  if (error) {
-    return <main className={styles.container}>{error}</main>;
-  }
-
+  const pageTitle = name ?? weatherData?.name ?? 'Selected Location';
 
   return (
     <main className={styles.container}>
-      <h2>{name ?? 'Selected Location'}</h2>
-      <Forecast
-        weatherData={weatherData}
-        mode="pinFirst"
-        reorderable={true}
-        limit={5}
-      />
-      <LocationSearch
-        getWeather={getWeather}
-        autoLoad={false}
-      />
-      <section className={styles.comments}>
-        <h3>Activity Log</h3>
+      <section className={styles.gridArea}>
+        <Forecast weatherData={weatherData} mode="pinFirst" reorderable={true} limit={5} />
 
-        <ActivityForm
-          handleAddActivity={handleAddActivity}
-          editingActivity={editingActivity}
-          setEditingActivity={setEditingActivity}
-          handleUpdateActivity={handleUpdateActivity}
-        />
+        <section className={styles.comments}>
+          <h3>Activity Log</h3>
 
-        {activities.length === 0 && (
-          <p>There are no activities yet.</p>
-        )}
+          <ActivityForm
+            handleAddActivity={handleAddActivity}
+            editingActivity={editingActivity}
+            setEditingActivity={setEditingActivity}
+            handleUpdateActivity={handleUpdateActivity}
+          />
 
-        {activities.map(activity => (
-          <article key={activity._id} className={styles.comment}>
-            <header>
-              <p>
-                {`${activity.author._id === user._id ? 'You' : activity.author.username
-                  } posted on ${new Date(activity.createdAt).toLocaleDateString()}`}
-              </p>
-            </header>
-            <div className="activity">
-              <p><strong>Activity:</strong> {activity.text}</p>
-              <p>
-                <strong>Day of Activity:</strong>{" "}
-                {new Date(activity.day).toLocaleDateString()}
-              </p>
-            </div>
+          {error ? <p className={styles.inlineError}>{error}</p> : null}
 
-            {user && activity.author._id === user._id && (
-              <div className={styles.commentActions}>
-                <button onClick={() => setEditingActivity(activity)}>Edit</button>
-                <button onClick={() => handleDeleteActivity(activity._id)}>Delete</button>
-              </div>
-            )}
-          </article>
-        ))}
+          {activities.length === 0 ? (
+            <p>There are no activities yet.</p>
+          ) : (
+            activities.map((activity) => (
+              <article key={activity._id} className={styles.comment}>
+                <header>
+                  <p>
+                    {`${activity.author?._id === user?._id ? 'You' : activity.author?.username || 'Unknown'
+                      } posted on ${new Date(activity.createdAt).toLocaleDateString()}`}
+                  </p>
+                </header>
+
+                <div className="activity">
+                  <p>
+                    <strong>Activity:</strong> {activity.text}
+                  </p>
+                  <p>
+                    <strong>Day of Activity:</strong> {new Date(activity.day).toLocaleDateString()}
+                  </p>
+                </div>
+
+                {user && activity.author?._id === user._id && (
+                  <div className={styles.commentActions}>
+                    <button type="button" onClick={() => setEditingActivity(activity)}>
+                      Edit
+                    </button>
+                    <button type="button" onClick={() => handleDeleteActivity(activity._id)}>
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))
+          )}
+        </section>
       </section>
 
+      <aside className={styles.sidebar}>
+        <div className={styles.sidebarItem}>
+          <section className={styles.metaCard}>
+            <h2 className={styles.title}>{pageTitle}</h2>
+          </section>
+        </div>
+
+        <div className={styles.sidebarItem}>
+          <LocationSearch getWeather={getWeather} autoLoad={false} />
+        </div>
+      </aside>
     </main>
   );
 };
