@@ -1,5 +1,5 @@
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState, useContext, useRef } from 'react';
 import Forecast from '../../components/Forecast/Forecast.jsx';
 import LocationSearch from '../../components/LocationSearch/LocationSearch.jsx';
 import styles from './ShowLocation.module.css';
@@ -21,6 +21,28 @@ const ShowLocation = () => {
 
   const { weatherData, setWeatherData, getWeather } = useWeather();
 
+  // Normalize coords same as Forecast locationKey (4 decimals) to avoid float string mismatch.
+  const normCoord = (v) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return NaN;
+    return Math.round(n * 10000) / 10000;
+  };
+
+  // Remount Forecast when URL target changes so it behaves like fresh navigation.
+  const titleKey = lon && lat ? `${normCoord(lon)}|${normCoord(lat)}` : '';
+  const passedKey =
+    passed?.lon != null && passed?.lat != null ? `${normCoord(passed.lon)}|${normCoord(passed.lat)}` : '';
+
+  // Use passed ONLY once per titleKey so LocationSearch can still update weatherData afterward.
+  const usedPassedKeyRef = useRef(null);
+  const shouldUsePassedNow =
+    !!passed && !!titleKey && passedKey === titleKey && usedPassedKeyRef.current !== titleKey;
+
+  if (shouldUsePassedNow) usedPassedKeyRef.current = titleKey;
+
+  const forecastWeatherData = shouldUsePassedNow ? passed : weatherData;
+  const forecastKey = titleKey || 'forecast';
+
   const [savedLocation, setSavedLocation] = useState(null);
   const [activities, setActivities] = useState([]);
   const [editingActivity, setEditingActivity] = useState(null);
@@ -38,12 +60,12 @@ const ShowLocation = () => {
       },
     }));
 
-  // If navigated from Link with state, use it immediately
+  // Hydrate hook state from Link state (safe, but Forecast uses shouldUsePassedNow to avoid “sticky passed”).
   useEffect(() => {
     if (passed) setWeatherData(passed);
   }, [passed, setWeatherData]);
 
-  // If opened via URL, fetch by lon/lat
+  // If opened via URL (no passed), fetch by lon/lat.
   useEffect(() => {
     if (passed) return;
     if (!lon || !lat) return;
@@ -60,10 +82,16 @@ const ShowLocation = () => {
 
   useEffect(() => {
     const fetchSavedLocation = async () => {
-      if (!weatherData) return;
+      const lat = weatherData?.lat ?? weatherData?.latitude;
+      const lon = weatherData?.lon ?? weatherData?.longitude;
+
+      const latNum = Number(lat);
+      const lonNum = Number(lon);
+
+      if (!Number.isFinite(latNum) || !Number.isFinite(lonNum)) return;
 
       try {
-        const loc = await forecastService.getLocationByCoords(weatherData.lat, weatherData.lon);
+        const loc = await forecastService.getLocationByCoords(latNum, lonNum);
 
         if (loc) {
           setSavedLocation(loc);
@@ -90,7 +118,6 @@ const ShowLocation = () => {
         return;
       }
 
-      // FIX: use savedLocation; create it if needed
       let loc = savedLocation;
       if (!loc) {
         loc = await forecastService.createLocation({
@@ -153,7 +180,13 @@ const ShowLocation = () => {
   return (
     <main className={styles.container}>
       <section className={styles.gridArea}>
-        <Forecast weatherData={weatherData} mode="pinFirst" reorderable={true} limit={5} />
+        <Forecast
+          key={forecastKey}
+          weatherData={forecastWeatherData}
+          mode="pinFirst"
+          reorderable={true}
+          limit={5}
+        />
 
         <section className={styles.comments}>
           <h3>Activity Log</h3>
@@ -174,8 +207,9 @@ const ShowLocation = () => {
               <article key={activity._id} className={styles.comment}>
                 <header>
                   <p>
-                    {`${activity.author?._id === user?._id ? 'You' : activity.author?.username || 'Unknown'
-                      } posted on ${new Date(activity.createdAt).toLocaleDateString()}`}
+                    {`${activity.author?._id === user?._id ? 'You' : activity.author?.username || 'Unknown'} posted on ${new Date(
+                      activity.createdAt
+                    ).toLocaleDateString()}`}
                   </p>
                 </header>
 

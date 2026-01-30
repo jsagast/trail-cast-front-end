@@ -1,3 +1,4 @@
+// ForecastLocationRow.jsx
 import { Link, useNavigate } from 'react-router-dom';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import styles from './ForecastLocationRow.module.css';
@@ -33,13 +34,14 @@ const ForecastLocationRow = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const canDrag = !!reorder?.enabled;
+  const reserveReorderSpace = !!reorder?.reserveSpace;
   const selectRef = useRef(null);
   const measureRef = useRef(null);
   const dragDepth = useRef(0);
 
   const linkRef = useRef(null);
   const [isTwoLineTitle, setIsTwoLineTitle] = useState(false);
-  
+
   const displayLabel =
     savingToList ? 'Adding…'
     : listsLoading ? 'Loading lists…'
@@ -74,17 +76,13 @@ const ForecastLocationRow = ({
       const padBottom = parseFloat(cs.paddingBottom);
 
       const h = el.scrollHeight;
-
-      // one line of text + padding
       const oneLine = lineHeight + padTop + padBottom;
 
-      // tolerance so we don’t flicker on fractional pixels
       setIsTwoLineTitle(h > oneLine + 1);
     };
 
     compute();
 
-    // Recompute if the cell width changes (wrapping changes)
     const ro = new ResizeObserver(() => {
       requestAnimationFrame(compute);
     });
@@ -116,7 +114,6 @@ const ForecastLocationRow = ({
 
       setSelectLabel('✅ Added');
     } catch (err) {
-      // Try to pull out a useful message regardless of how listService throws
       const status = err?.status ?? err?.response?.status ?? err?.cause?.status;
       const rawMsg =
         err?.message ??
@@ -142,7 +139,6 @@ const ForecastLocationRow = ({
   const handleDragStart = (e) => {
     if (!canDrag) return;
     setDragActive(true);
-    // store the source index in the drag payload
     e.dataTransfer.setData('text/plain', String(reorder.index));
     e.dataTransfer.effectAllowed = 'move';
   };
@@ -155,7 +151,7 @@ const ForecastLocationRow = ({
 
   const handleDragOver = (e) => {
     if (!canDrag) return;
-    e.preventDefault(); // REQUIRED to allow drop
+    e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
   };
 
@@ -201,12 +197,11 @@ const ForecastLocationRow = ({
     return (
       <div className={`${styles.half} ${base}`}>
         {p.icon && <img className={styles.icon} src={p.icon} alt={p.shortForecast || 'forecast icon'} />}
-        
+
         <div className={styles.temp}>
           {p.temperature}°{p.temperatureUnit}
         </div>
-        <div className={styles.meta}>
-        </div>
+        <div className={styles.meta}></div>
       </div>
     );
   };
@@ -233,14 +228,15 @@ const ForecastLocationRow = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {reorder?.enabled && (
+        {(canDrag || reserveReorderSpace) && (
           <div
             className={styles.dragHandle}
-            draggable
+            draggable={canDrag}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
-            aria-label="Drag to reorder"
-            title="Drag to reorder"
+            aria-label={canDrag ? 'Drag to reorder' : undefined}
+            title={canDrag ? 'Drag to reorder' : undefined}
+            style={!canDrag ? { visibility: 'hidden' } : undefined}
           >
             ⋮⋮
           </div>
@@ -248,10 +244,7 @@ const ForecastLocationRow = ({
 
         <Link
           ref={linkRef}
-          className={[
-            styles.locationLink,
-            isTwoLineTitle ? styles.locationLinkTwoLine : '',
-          ].join(' ')}
+          className={[styles.locationLink, isTwoLineTitle ? styles.locationLinkTwoLine : ''].join(' ')}
           style={titleColor ? { '--titleColor': titleColor } : undefined}
           to={`/location?name=${encodeURIComponent(weatherData.name)}&lon=${weatherData.lon}&lat=${weatherData.lat}`}
           state={{ weatherData }}
@@ -259,45 +252,61 @@ const ForecastLocationRow = ({
           {weatherData.name}
         </Link>
 
-        {reorder?.enabled && (
-          <div className={styles.reorderControls}>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                reorder.onMove(reorder.index, reorder.index - 1);
-              }}
-              disabled={reorder.index === 0}
-              aria-label="Move up"
-            >
-              ▲
-            </button>
+        {(canDrag || reserveReorderSpace) && (
+          <div className={styles.reorderControls} style={!canDrag ? { visibility: 'hidden' } : undefined}>
+            {canDrag ? (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    reorder.onMove(reorder.index, reorder.index - 1);
+                  }}
+                  disabled={reorder.index === 0}
+                  aria-label="Move up"
+                >
+                  ▲
+                </button>
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                reorder.onMove(reorder.index, reorder.index + 1);
-              }}
-              disabled={reorder.index === reorder.total - 1}
-              aria-label="Move down"
-            >
-              ▼
-            </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    reorder.onMove(reorder.index, reorder.index + 1);
+                  }}
+                  disabled={reorder.index === reorder.total - 1}
+                  aria-label="Move down"
+                >
+                  ▼
+                </button>
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                reorder.onRemove(reorder.index);
-              }}
-              aria-label="Remove"
-            >
-              ✕
-            </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    reorder.onRemove(reorder.index);
+                  }}
+                  aria-label="Remove"
+                >
+                  ✕
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" tabIndex={-1} aria-hidden="true">
+                  ▲
+                </button>
+                <button type="button" tabIndex={-1} aria-hidden="true">
+                  ▼
+                </button>
+                <button type="button" tabIndex={-1} aria-hidden="true">
+                  ✕
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -336,42 +345,42 @@ const ForecastLocationRow = ({
         )}
       </div>
 
-    {dayColumns.map((col, idx) => {
-      const dateKey = col.dateKey;
-      const day = byDate[dateKey]?.day ?? null;
-      const night = byDate[dateKey]?.night ?? null;
+      {dayColumns.map((col, idx) => {
+        const dateKey = col.dateKey;
+        const day = byDate[dateKey]?.day ?? null;
+        const night = byDate[dateKey]?.night ?? null;
 
-      const dayTitleColor = col.titleColor
-      const isFirst = idx === 0;
-      const isLast = idx === dayColumns.length - 1;
+        const dayTitleColor = col.titleColor;
+        const isFirst = idx === 0;
+        const isLast = idx === dayColumns.length - 1;
 
-      const dim = hoverDayKey && hoverDayKey !== dateKey;
-      const focus = hoverDayKey === dateKey;
-      const dividerOpacity = (hoverDayKey && focus && !isFirst) ? 0.25 : 1;
+        const dim = hoverDayKey && hoverDayKey !== dateKey;
+        const focus = hoverDayKey === dateKey;
+        const dividerOpacity = hoverDayKey && focus && !isFirst ? 0.25 : 1;
 
-      return (
-        <div
-          key={dateKey}
-          data-daykey={dateKey}
-          className={[
-            styles.cell,
-            isFirst ? styles.cellFirst : '',
-            isLast ? styles.cellLast : '',
-            dim ? styles.dimmedCol : '',
-            focus ? styles.focusedCol : '',
-          ].join(' ')}
-          style={{
-            ...(dayTitleColor ? { '--dayTitleColor': dayTitleColor } : {}),
-            '--dividerOpacity': dividerOpacity,
-          }}
-        >
-          <div className={styles.cellInner}>
-            {renderHalf(day, false)}
-            {renderHalf(night, true)}
+        return (
+          <div
+            key={dateKey}
+            data-daykey={dateKey}
+            className={[
+              styles.cell,
+              isFirst ? styles.cellFirst : '',
+              isLast ? styles.cellLast : '',
+              dim ? styles.dimmedCol : '',
+              focus ? styles.focusedCol : '',
+            ].join(' ')}
+            style={{
+              ...(dayTitleColor ? { '--dayTitleColor': dayTitleColor } : {}),
+              '--dividerOpacity': dividerOpacity,
+            }}
+          >
+            <div className={styles.cellInner}>
+              {renderHalf(day, false)}
+              {renderHalf(night, true)}
+            </div>
           </div>
-        </div>
-      );
-    })}
+        );
+      })}
     </>
   );
 };

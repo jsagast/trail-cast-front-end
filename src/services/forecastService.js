@@ -80,14 +80,9 @@ const createLocation = async (locationData) => {
 };
 
 const getLocationByCoords = async (lat, lon) => {
-  try {
-    const res = await fetch(`${BASE_URL}/by-coords?lat=${lat}&lon=${lon}`)
-    const location = await res.json();
-    return location
-  } catch (err) {
-    console.error('Error fetching location by coords:', err);
-    return null;
-  }
+  const la = Number(lat);
+  const lo = Number(lon);
+  if (!Number.isFinite(la) || !Number.isFinite(lo)) return null; 
 };
 
 export {

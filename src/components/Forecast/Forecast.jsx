@@ -28,9 +28,7 @@ const lerpHex = (aHex, bHex, t) => {
   });
 };
 
-// Exact Trail→Cast spectrum from NavBar.module.css:
-// Trail: #fb5f04 → #f0ce1a
-// Cast:  #5fd6e3 → #1692df
+// Trail: #fb5f04 → #f0ce1a → #5fd6e3 → #1692df
 const TRAIL_CAST_STOPS = ['#fb5f04', '#f0ce1a', '#5fd6e3', '#1692df'];
 
 const sampleGradient = (stops, t) => {
@@ -54,16 +52,14 @@ const readCssPx = (el, varName, fallback) => {
   return Number.isFinite(n) ? n : fallback;
 };
 
-const dateKeyFromStartTime = (startTime) => startTime?.slice(0, 10); // "YYYY-MM-DD"
+const dateKeyFromStartTime = (startTime) => startTime?.slice(0, 10);
 
 const weekdayLabel = (dateKey) => {
-  // Use midday to avoid timezone edge weirdness
   const d = new Date(`${dateKey}T12:00:00`);
   return d.toLocaleDateString(undefined, { weekday: 'long' });
 };
 
 const buildDayColumns = (forecast) => {
-  // returns [{ dateKey, label }]
   const order = [];
   const seen = new Set();
 
@@ -74,11 +70,9 @@ const buildDayColumns = (forecast) => {
     order.push(dk);
   }
 
-  // Keep up to 7 days available, but we display a window.
   return order.slice(0, 7).map((dk) => ({ dateKey: dk, label: weekdayLabel(dk) }));
 };
 
-// Stable identifier for a location. Names are not unique/stable.
 const locationKey = (loc) => {
   if (!loc) return '';
   if (loc._id) return String(loc._id);
@@ -90,7 +84,6 @@ const locationKey = (loc) => {
   return String(loc.name || '');
 };
 
-// Context bridge so Forecast DOES NOT subscribe unless dropdown is shown.
 const ListsBridge = ({ children }) => {
   const { lists, listsLoading, listsError } = useContext(ListsContext);
   return children({ lists, listsLoading, listsError });
@@ -101,16 +94,11 @@ const Forecast = ({
   mode = 'newestTop',
   limit = 5,
   initialTopName = null,
-
-  // controlled mode (CreateList/Landing/ShowList)
   locations: controlledLocations,
   setLocations: setControlledLocations,
-
   reorderable = false,
   showListDropdown = true,
-
-  // NEW: allow parent to control per-location title colors
-  titleColors = null, // can be array OR object map
+  titleColors = null,
 }) => {
   const [internalLocations, setInternalLocations] = useState([]);
   const locations = controlledLocations ?? internalLocations;
@@ -135,7 +123,6 @@ const Forecast = ({
   const maxOffset = Math.max(0, dayColumns.length - windowDays);
 
   const daySig = useMemo(() => dayColumns.map((c) => c.dateKey).join('|'), [dayColumns]);
-
   const tableRef = useRef(null);
 
   useEffect(() => {
@@ -196,6 +183,20 @@ const Forecast = ({
     const incomingKey = locationKey(weatherData);
 
     setLocations((prev) => {
+      // Robust pinFirst: index 0 is pinned; new goes to [1]; replace pinned if same key.
+      if (mode === 'pinFirst') {
+        const pinned = prev[0] ?? null;
+        const rest = prev.slice(1).filter((l) => locationKey(l) !== incomingKey);
+
+        if (!pinned) return [weatherData, ...rest].slice(0, limit);
+
+        if (locationKey(pinned) === incomingKey) {
+          return [weatherData, ...rest].slice(0, limit);
+        }
+
+        return [pinned, weatherData, ...rest].slice(0, limit);
+      }
+
       const withoutThis = prev.filter((l) => locationKey(l) !== incomingKey);
 
       if (mode === 'newestTop' && initialTopName && weatherData.source === 'init') {
@@ -203,12 +204,6 @@ const Forecast = ({
         if (withoutThis[0]?.name === initialTopName) {
           return [withoutThis[0], weatherData, ...withoutThis.slice(1)].slice(0, limit);
         }
-      }
-
-      if (mode === 'pinFirst' && withoutThis.length) {
-        const pinned = withoutThis[0];
-        if (weatherData.name === pinned.name) return [weatherData, ...withoutThis.slice(1)].slice(0, limit);
-        return [pinned, weatherData, ...withoutThis.slice(1)].slice(0, limit);
       }
 
       return [weatherData, ...withoutThis].slice(0, limit);
@@ -225,8 +220,36 @@ const Forecast = ({
     });
   };
 
+  const moveLocationInRest = (fromIdx, toIdx) => {
+    setLocations((prev) => {
+      if (prev.length <= 1) return prev;
+
+      const pinned = prev[0];
+      const rest = prev.slice(1);
+
+      if (fromIdx < 0 || fromIdx >= rest.length) return prev;
+      if (toIdx < 0 || toIdx >= rest.length) return prev;
+
+      const copy = [...rest];
+      const [moved] = copy.splice(fromIdx, 1);
+      copy.splice(toIdx, 0, moved);
+
+      return [pinned, ...copy];
+    });
+  };
+
   const removeLocation = (idx) => {
     setLocations((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const removeLocationInRest = (idx) => {
+    setLocations((prev) => {
+      if (prev.length <= 1) return prev;
+      const pinned = prev[0];
+      const rest = prev.slice(1);
+      if (idx < 0 || idx >= rest.length) return prev;
+      return [pinned, ...rest.filter((_, i) => i !== idx)];
+    });
   };
 
   if (!locations.length || !dayColumns.length) return <main>Forecast Loading</main>;
@@ -239,7 +262,6 @@ const Forecast = ({
   const handleTablePointerMove = (e) => {
     const el = e.target.closest?.('[data-daykey]');
     const dk = el?.dataset?.daykey ?? null;
-
     setHoverDayKey((prev) => (prev === dk ? prev : dk));
   };
   const handleTablePointerLeave = () => setHoverDayKey(null);
@@ -247,8 +269,54 @@ const Forecast = ({
   const prevDisabled = dayOffset === 0;
   const nextDisabled = dayOffset === maxOffset;
 
-  const renderRows = ({ lists = [], listsLoading = false, listsError = '' } = {}) =>
-    locations.map((loc, idx) => {
+  const renderRows = ({ lists = [], listsLoading = false, listsError = '' } = {}) => {
+    if (mode === 'pinFirst' && reorderable && locations.length) {
+      const pinnedLoc = locations[0];
+      const rest = locations.slice(1);
+
+      const renderRow = (loc, globalIdx, reorderConfig) => {
+        const tRow = locations.length <= 1 ? 0 : globalIdx / (locations.length - 1);
+        const key = locationKey(loc) || loc.name;
+
+        const titleColor =
+          Array.isArray(titleColors)
+            ? (titleColors[globalIdx] ?? sampleGradient(TRAIL_CAST_STOPS, tRow))
+            : (titleColors?.[key] ?? sampleGradient(TRAIL_CAST_STOPS, tRow));
+
+        return (
+          <ForecastLocationRow
+            key={locationKey(loc) || loc.name}
+            weatherData={loc}
+            dayColumns={dayColumns}
+            titleColor={titleColor}
+            hoverDayKey={hoverDayKey}
+            reorder={reorderConfig}
+            showListDropdown={showListDropdown}
+            lists={lists}
+            listsLoading={listsLoading}
+            listsError={listsError}
+          />
+        );
+      };
+
+      return (
+        <>
+          {renderRow(pinnedLoc, 0, { enabled: false, reserveSpace: true })}
+
+          {rest.map((loc, localIdx) =>
+            renderRow(loc, localIdx + 1, {
+              enabled: true,
+              index: localIdx,
+              total: rest.length,
+              onMove: moveLocationInRest,
+              onRemove: removeLocationInRest,
+            })
+          )}
+        </>
+      );
+    }
+
+    return locations.map((loc, idx) => {
       const tRow = locations.length <= 1 ? 0 : idx / (locations.length - 1);
       const key = locationKey(loc) || loc.name;
 
@@ -266,13 +334,7 @@ const Forecast = ({
           hoverDayKey={hoverDayKey}
           reorder={
             reorderable
-              ? {
-                  enabled: true,
-                  index: idx,
-                  total: locations.length,
-                  onMove: moveLocation,
-                  onRemove: removeLocation,
-                }
+              ? { enabled: true, index: idx, total: locations.length, onMove: moveLocation, onRemove: removeLocation }
               : null
           }
           showListDropdown={showListDropdown}
@@ -282,6 +344,7 @@ const Forecast = ({
         />
       );
     });
+  };
 
   return (
     <main className={styles.main}>
@@ -324,11 +387,7 @@ const Forecast = ({
             <div
               key={c.dateKey}
               data-daykey={c.dateKey}
-              className={[
-                styles.dayHeader,
-                dim ? styles.dimmedCol : '',
-                focus ? styles.focusedCol : '',
-              ].join(' ')}
+              className={[styles.dayHeader, dim ? styles.dimmedCol : '', focus ? styles.focusedCol : ''].join(' ')}
               style={{ color: c.titleColor }}
             >
               {c.label}
@@ -336,11 +395,7 @@ const Forecast = ({
           );
         })}
 
-        {showListDropdown ? (
-          <ListsBridge>{(lp) => <>{renderRows(lp)}</>}</ListsBridge>
-        ) : (
-          <>{renderRows()}</>
-        )}
+        {showListDropdown ? <ListsBridge>{(lp) => <>{renderRows(lp)}</>}</ListsBridge> : <>{renderRows()}</>}
       </div>
     </main>
   );

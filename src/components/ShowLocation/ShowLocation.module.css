@@ -8,8 +8,6 @@
   grid-template-columns: minmax(0, 1400px) minmax(240px, 1fr);
   gap: 24px;
   align-items: start;
-
-  background-color: #0b0b0b;
 }
 
 .gridArea {
